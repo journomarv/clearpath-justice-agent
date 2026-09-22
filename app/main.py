@@ -9,19 +9,32 @@ from app.config import get_cors_origins
 from app.routers import assess, chat, health
 
 
+# ---------------------------------------------------------
+# Paths
+# ---------------------------------------------------------
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 FRONTEND_DIR = BASE_DIR / "frontend"
 
 
+# ---------------------------------------------------------
+# FastAPI application
+# ---------------------------------------------------------
+
 app = FastAPI(
     title="ClearPath Justice Agent",
     description=(
-        "AI-assisted digital justice navigation for "
-        "criminal-record relief and expungement."
+        "Path is an AI-assisted digital justice assistant "
+        "helping people navigate criminal-record relief "
+        "and expungement in South Africa."
     ),
     version="0.2.1",
 )
 
+
+# ---------------------------------------------------------
+# CORS
+# ---------------------------------------------------------
 
 app.add_middleware(
     CORSMiddleware,
@@ -32,9 +45,31 @@ app.add_middleware(
 )
 
 
+# ---------------------------------------------------------
+# API routers
+# ---------------------------------------------------------
+
 app.include_router(health.router)
 app.include_router(chat.router)
 app.include_router(assess.router)
+
+
+# ---------------------------------------------------------
+# Frontend
+# ---------------------------------------------------------
+
+@app.get("/")
+async def root():
+    """Serve the Path conversational interface."""
+    return FileResponse(FRONTEND_DIR / "index.html")
+
+
+# Serve frontend assets such as JavaScript and CSS.
+app.mount(
+    "/frontend",
+    StaticFiles(directory=FRONTEND_DIR),
+    name="frontend",
+)app.include_router(assess.router)
 
 
 @app.get("/")
