@@ -7,6 +7,7 @@ from app.services.deepseek import (
 )
 from app.services.knowledge import KnowledgeService
 
+
 router = APIRouter(tags=["chat"])
 
 
@@ -38,16 +39,18 @@ async def chat(request: ChatRequest):
             knowledge=context,
             pathway=request.pathway,
         )
+
     except DeepSeekError as exc:
-    raise HTTPException(
-        status_code=503,
-        detail=str(exc),
-    ) from None
+        raise HTTPException(
+            status_code=503,
+            detail=str(exc),
+        ) from None
+
     except Exception:
         raise HTTPException(
             status_code=502,
             detail="The AI service could not be reached.",
-        )
+        ) from None
 
     return ChatResponse(
         answer=result["answer"],
