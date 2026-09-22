@@ -46,5 +46,4 @@ app.mount(
     "/frontend",
     StaticFiles(directory=FRONTEND_DIR),
     name="frontend",
-)        "version": "0.2.1",
-    }
+)        
