@@ -1,5 +1,29 @@
 # ClearPath Justice Agent - Architecture Guide
 
+## v0.2 Summary
+
+v0.2 generalises v0.1's cannabis-only skeleton into a **modular
+relief-type architecture**, without inventing any legal content:
+
+- `app/rules/registry.py` adds a plug-in pattern (`@register(ReliefType.X)`)
+  so relief types are registered independently of the orchestrator.
+- `app/rules/cannabis_cppa.py` (v0.1's original scope) and
+  `app/rules/criminal_record_expungement.py` (new, general Criminal
+  Procedure Act relief) both exist as **placeholder handlers**: every
+  assessment still routes to `REQUIRES_HUMAN_REVIEW` with
+  `verified_rules_applied=False`, because no relief type has been signed
+  off by ClearPath legal yet.
+- `app/knowledge/sources.py` adds a source-of-truth registry with a
+  `content_verified_for_automation` flag, separating "safe to cite to a
+  user" from "safe to encode as pass/fail logic".
+- `app/privacy.py` adds ID-number/phone-number detection, wired into
+  request validation and logging.
+- `GET /relief-types` lets client surfaces discover supported relief
+  types dynamically.
+
+The rest of this document describes the full system; sections below are
+updated in place to reflect the v0.2 structure.
+
 ## System Architecture
 
 ```
@@ -298,45 +322,61 @@ Used throughout application
 ## Rules Engine Architecture
 
 ```
-Rules Engine (app/rules/eligibility.py)
+app/rules/eligibility.py  (generic entry point — the ONLY function
+                            the rest of the app calls)
 
-Input: User screening answers
-│
-├─ Validate input structure
-├─ Check required fields
-└─ Format for assessment
+Input: ScreeningAnswers { relief_type, answers, free_text_context }
 │
 ↓
-PLACEHOLDER v0.1
+app/rules/registry.py
 │
-├─ Do NOT invent criteria
-├─ Do NOT assume eligibility
-├─ Route to human review
-└─ Request verified rules
+├─ get_handler(relief_type) → looks up a registered handler function
+├─ No handler found → UNKNOWN / requires_human_review=True (never guesses)
+└─ Handler found → call it
 │
 ↓
-FUTURE v0.2
+Relief-type handler (e.g. app/rules/cannabis_cppa.py,
+                          app/rules/criminal_record_expungement.py)
+│
+├─ v0.1 / v0.2 STATUS: PLACEHOLDER for every relief type
+│  ├─ Do NOT invent criteria
+│  ├─ Do NOT assume eligibility
+│  ├─ Route to human review (status=REQUIRES_HUMAN_REVIEW)
+│  ├─ verified_rules_applied = False
+│  └─ Cite knowledge sources (source_ids), even if those sources are
+│     themselves still TODO for legal verification
+│
+↓
+FUTURE (once ClearPath legal verifies a relief type)
 │
 ├─ Check conviction eligibility
-│  └─ Cannabis for Private Purposes Act Section X
+│  └─ e.g. Cannabis for Private Purposes Act Section X (cited, verified)
 ├─ Check temporal eligibility
-│  └─ CPPA effective date rules
+│  └─ e.g. effective-date rules
 ├─ Check sentence completion
 │  └─ Verified from user/government sources
 ├─ Check for disqualifying factors
 │  └─ Current DOJ policy
-└─ Identify required documents
-   └─ Official checklist
+├─ Identify required documents
+│  └─ Official checklist
+└─ Set verified_rules_applied = True
 │
 ↓
 Output: EligibilityAssessment
 │
-├─ status: "eligible" | "not_eligible" | 
+├─ relief_type: ReliefType (cannabis_expungement | criminal_record_expungement | unknown)
+├─ status: "eligible" | "not_eligible" |
 │           "needs_more_info" | "requires_human_review" | "unknown"
 ├─ reasons: [list of assessment reasons]
 ├─ next_steps: [list of recommended actions]
 ├─ documents_required: [list of documents]
-└─ requires_human_review: boolean
+├─ requires_human_review: boolean
+├─ verified_rules_applied: boolean  (NEW — always False until legal sign-off)
+└─ source_ids: [knowledge source IDs this assessment is traceable to]
+
+Modularity: adding a new relief type never touches this file or the
+orchestrator (app/agent.py) — only registry.py's decorator and a new
+handler module. See README.md, "Adding a New Relief Type".
 ```
 
 ## Knowledge Base Architecture
@@ -377,16 +417,41 @@ Structure:
    └─ verified_date: "YYYY-MM-DD"
 
 Each item includes:
-├─ source: Original authoritative source
-├─ source_type: "official" | "verified" | "curated"
-├─ date_verified: When last verified
-├─ jurisdiction: "South Africa"
-└─ version: Version number
+├─ source_ids: [IDs referencing app/knowledge/sources.py]
+├─ relief_types: [which ReliefType(s) this applies to]
+├─ content: plain-language text (TODO placeholder until populated)
+└─ verified_date: When last verified (null until populated)
+
+## Source Registry (NEW, v0.2)
+
+```
+app/knowledge/sources.py — SOURCE_REGISTRY
+
+KnowledgeSource {
+  id, title, organization,
+  source_type: OFFICIAL | CURATED | UNVERIFIED,
+  jurisdiction: "South Africa",
+  url, verified_date,
+  content_verified_for_automation: bool,  ← key distinction
+  notes
+}
+
+content_verified_for_automation = False means:
+  "Safe to CITE to a user as a pointer to an official process"
+  ≠
+  "Safe to ENCODE as pass/fail eligibility logic in app/rules/"
+
+v0.2 ships several real OFFICIAL sources (e.g. justice.gov.za's
+expungements overview, gov.za's summary page) found via public search —
+all still content_verified_for_automation=False pending ClearPath legal
+review of current wording and edge cases.
+```
 
 PRINCIPLE: No invented information
            Only verified materials
            Always cite source
            Never outdated
+           Citing a source ≠ encoding it as automated logic
 ```
 
 ## API Request/Response Cycle
@@ -442,11 +507,21 @@ pytest (test framework)
 │
 ├─ Unit Tests (no external dependencies)
 │  ├─ test_health.py
-│  │  └─ GET /health returns 200
+│  │  └─ GET /health returns 200, never exposes the API key
 │  ├─ test_eligibility.py
-│  │  └─ Rules engine returns structured output
+│  │  └─ Every relief type routes to human review, never fabricates
+│  │     an eligible/not_eligible outcome (verified_rules_applied=False)
+│  ├─ test_rules_registry.py  (NEW)
+│  │  └─ Registry contains expected relief types; unsupported types
+│  │     degrade safely instead of crashing
+│  ├─ test_knowledge.py  (NEW)
+│  │  └─ Every knowledge item cites a real, registered source
+│  ├─ test_privacy.py  (NEW)
+│  │  └─ ID-number / phone-number detection, redaction, and request
+│  │     validation reject likely identifiers
 │  └─ test_agent.py
-│     └─ Agent processes messages correctly
+│     └─ Agent processes messages correctly; DeepSeek failures fail
+│        safe to human referral rather than crashing
 │
 ├─ Fixtures
 │  └─ TestClient for FastAPI
@@ -549,36 +624,41 @@ Logging Service → Audit Trail
 Monitoring → Health Checks
 ```
 
-## Future Expansions (v0.2+)
+## Future Expansions
 
 ```
-Current v0.1
+v0.1 (done)
 │
-├─ Rules: Placeholder
+├─ Rules: Placeholder (cannabis-only shape)
 ├─ Knowledge: Structure only
 └─ Features: Core agent working
 │
 ↓
-v0.2: Verified Content
+v0.2 (this version)
 │
-├─ Rules: Implement CPPA rules
-├─ Knowledge: Add materials
-├─ Features: Five-question screening, document generation
-└─ Database: Add PostgreSQL
+├─ Rules: Modular registry; cannabis + general criminal-record relief
+│         types both scaffolded, both still placeholder pending legal sign-off
+├─ Knowledge: Source-of-truth registry with real reference URLs, content
+│             still placeholder pending ClearPath material
+├─ Privacy: PII detection/redaction wired into requests and logging
+├─ API: GET /relief-types for dynamic client menus
+└─ Tests: Registry, knowledge, and privacy coverage added
 │
 ↓
-v0.3: Advanced Features
+v0.3: Verified Content + Advanced Features
 │
+├─ Rules: Implement verified criteria for at least one relief type
+├─ Knowledge: Populate real process guides, checklists, referral contacts
 ├─ WhatsApp Integration: Paige connection
 ├─ Multi-language: Localization support
-├─ Tracking: Application status
-└─ Notifications: SMS/Email updates
+├─ Database: Add PostgreSQL, session management
+└─ Tracking: Application status, notifications
 │
 ↓
 v0.4+: Expansion
 │
-├─ Broader Legal: Beyond cannabis
-├─ Government Integration: DPI systems
+├─ Additional relief types (e.g. Child Justice Act records)
+├─ Government Integration: DOJ/SAPS systems
 ├─ Mobile App: Native iOS/Android
 └─ Open Source: Self-hosted options
 ```
