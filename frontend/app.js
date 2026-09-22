@@ -1,40 +1,487 @@
-const API_BASE = "https://api.clearpathjustice.org.za";
+/* =========================================================
+   ClearPath Justice — Path
+   Conversation frontend
+   ========================================================= */
 
-const welcomeScreen = document.getElementById("welcomeScreen");
-const chatScreen = document.getElementById("chatScreen");
+const conversation = document.getElementById("conversation");
+const welcome = document.getElementById("welcome");
 const messages = document.getElementById("messages");
 
 const chatForm = document.getElementById("chatForm");
 const messageInput = document.getElementById("messageInput");
 const sendButton = document.getElementById("sendButton");
 
-const newChatButton = document.getElementById("newChatButton");
-const mobileNewChat = document.getElementById("mobileNewChat");
+const backButton = document.getElementById("backButton");
+const infoButton = document.getElementById("infoButton");
+const addButton = document.getElementById("addButton");
 
-const statusDot = document.getElementById("statusDot");
-const statusText = document.getElementById("statusText");
+const aboutModal = document.getElementById("aboutModal");
+const closeModal = document.getElementById("closeModal");
 
-let currentPathway = null;
 let isSending = false;
 
 
+/* ---------------------------------------------------------
+   API configuration
+   --------------------------------------------------------- */
+
 /*
---------------------------------------------------
-QUICK ACTIONS
---------------------------------------------------
-*/
+ * Because the frontend is served by the same FastAPI
+ * application, using "/chat" keeps the frontend portable.
+ *
+ * If your deployed backend uses a different API domain,
+ * change this to the full endpoint.
+ */
+const CHAT_ENDPOINT = "/chat";
 
-const ACTIONS = {
 
-  options: {
-    prompt:
-      "I want to understand what legal remedy or pathway may be available to me for my criminal record.",
-    assess: false
-  },
+/* ---------------------------------------------------------
+   Utility functions
+   --------------------------------------------------------- */
 
-  eligibility: {
-    prompt:
-      "I want to check whether I may be eligible for expungement or another form of criminal-record relief.",
+function escapeHtml(value) {
+    return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
+
+function scrollToBottom() {
+    requestAnimationFrame(() => {
+        conversation.scrollTo({
+            top: conversation.scrollHeight,
+            behavior: "smooth"
+        });
+    });
+}
+
+
+function resizeInput() {
+    messageInput.style.height = "auto";
+
+    const newHeight = Math.min(
+        messageInput.scrollHeight,
+        180
+    );
+
+    messageInput.style.height = `${newHeight}px`;
+}
+
+
+function updateSendButton() {
+    const hasText = messageInput.value.trim().length > 0;
+
+    sendButton.disabled = !hasText || isSending;
+}
+
+
+/* ---------------------------------------------------------
+   Conversation state
+   --------------------------------------------------------- */
+
+function startConversation() {
+    welcome.style.display = "none";
+    messages.classList.add("active");
+}
+
+
+function addMessage(role, text) {
+    startConversation();
+
+    const message = document.createElement("article");
+    message.className = `message ${role}`;
+
+    const label =
+        role === "user"
+            ? "You"
+            : "Path";
+
+    message.innerHTML = `
+        <div class="message-label">${label}</div>
+        <div class="message-bubble">${escapeHtml(text)}</div>
+    `;
+
+    messages.appendChild(message);
+
+    scrollToBottom();
+
+    return message;
+}
+
+
+function addTypingIndicator() {
+    startConversation();
+
+    const message = document.createElement("article");
+    message.className = "message assistant";
+    message.id = "typingMessage";
+
+    message.innerHTML = `
+        <div class="message-label">Path</div>
+        <div class="message-bubble">
+            <div class="typing" aria-label="Path is thinking">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    `;
+
+    messages.appendChild(message);
+
+    scrollToBottom();
+}
+
+
+function removeTypingIndicator() {
+    const typing = document.getElementById("typingMessage");
+
+    if (typing) {
+        typing.remove();
+    }
+}
+
+
+/* ---------------------------------------------------------
+   Response parsing
+   --------------------------------------------------------- */
+
+function extractResponse(data) {
+    if (!data) {
+        return "";
+    }
+
+    /*
+     * Common response formats supported:
+     *
+     * { "response": "..." }
+     * { "message": "..." }
+     * { "answer": "..." }
+     * { "content": "..." }
+     * { "reply": "..." }
+     */
+
+    if (typeof data === "string") {
+        return data;
+    }
+
+    const possibleFields = [
+        "response",
+        "message",
+        "answer",
+        "content",
+        "reply",
+        "text"
+    ];
+
+    for (const field of possibleFields) {
+        if (
+            typeof data[field] === "string" &&
+            data[field].trim()
+        ) {
+            return data[field];
+        }
+    }
+
+    /*
+     * Some APIs return:
+     *
+     * { "data": { "response": "..." } }
+     */
+
+    if (data.data && typeof data.data === "object") {
+        return extractResponse(data.data);
+    }
+
+    /*
+     * OpenAI-style / agent-style response:
+     *
+     * { choices: [{ message: { content: "..." } }] }
+     */
+
+    if (
+        Array.isArray(data.choices) &&
+        data.choices.length > 0
+    ) {
+        const choice = data.choices[0];
+
+        if (
+            choice &&
+            choice.message &&
+            typeof choice.message.content === "string"
+        ) {
+            return choice.message.content;
+        }
+
+        if (
+            choice &&
+            typeof choice.text === "string"
+        ) {
+            return choice.text;
+        }
+    }
+
+    return "";
+}
+
+
+/* ---------------------------------------------------------
+   Send message
+   --------------------------------------------------------- */
+
+async function sendMessage(messageText) {
+    const text = messageText.trim();
+
+    if (!text || isSending) {
+        return;
+    }
+
+    isSending = true;
+    updateSendButton();
+
+    addMessage("user", text);
+
+    messageInput.value = "";
+    resizeInput();
+
+    addTypingIndicator();
+
+    try {
+        const response = await fetch(CHAT_ENDPOINT, {
+            method: "POST",
+
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            },
+
+            body: JSON.stringify({
+                message: text
+            })
+        });
+
+
+        let data = null;
+
+        try {
+            data = await response.json();
+        } catch {
+            data = null;
+        }
+
+
+        if (!response.ok) {
+            let errorMessage =
+                "I couldn't process that request right now.";
+
+            if (data) {
+                const serverError =
+                    data.detail ||
+                    data.error ||
+                    data.message;
+
+                if (typeof serverError === "string") {
+                    errorMessage = serverError;
+                }
+            }
+
+            throw new Error(errorMessage);
+        }
+
+
+        const answer = extractResponse(data);
+
+        if (!answer) {
+            throw new Error(
+                "The server responded, but Path did not return an answer."
+            );
+        }
+
+        removeTypingIndicator();
+
+        addMessage("assistant", answer);
+
+    } catch (error) {
+        console.error("Path chat error:", error);
+
+        removeTypingIndicator();
+
+        addMessage(
+            "assistant",
+            `I'm having trouble connecting right now. ${error.message}`
+        );
+
+    } finally {
+        isSending = false;
+        updateSendButton();
+
+        messageInput.focus();
+    }
+}
+
+
+/* ---------------------------------------------------------
+   Form submission
+   --------------------------------------------------------- */
+
+chatForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+
+    sendMessage(messageInput.value);
+});
+
+
+/* ---------------------------------------------------------
+   Textarea behaviour
+   --------------------------------------------------------- */
+
+messageInput.addEventListener("input", () => {
+    resizeInput();
+    updateSendButton();
+});
+
+
+messageInput.addEventListener("keydown", (event) => {
+    /*
+     * Enter sends.
+     * Shift + Enter creates a new line.
+     */
+
+    if (
+        event.key === "Enter" &&
+        !event.shiftKey &&
+        !event.isComposing
+    ) {
+        event.preventDefault();
+
+        if (!sendButton.disabled) {
+            sendMessage(messageInput.value);
+        }
+    }
+});
+
+
+/* ---------------------------------------------------------
+   Suggested prompts
+   --------------------------------------------------------- */
+
+document.querySelectorAll(".suggestion").forEach((button) => {
+    button.addEventListener("click", () => {
+        const prompt = button.dataset.prompt;
+
+        if (!prompt) {
+            return;
+        }
+
+        messageInput.value = prompt;
+
+        resizeInput();
+        updateSendButton();
+
+        messageInput.focus();
+
+        /*
+         * Send immediately when a suggested question is selected.
+         */
+        sendMessage(prompt);
+    });
+});
+
+
+/* ---------------------------------------------------------
+   Back button
+   --------------------------------------------------------- */
+
+backButton.addEventListener("click", () => {
+    /*
+     * If there is a conversation, return to the welcome state.
+     * Otherwise use browser history where available.
+     */
+
+    if (messages.classList.contains("active")) {
+        messages.innerHTML = "";
+        messages.classList.remove("active");
+
+        welcome.style.display = "";
+
+        messageInput.value = "";
+        resizeInput();
+        updateSendButton();
+
+        return;
+    }
+
+    if (window.history.length > 1) {
+        window.history.back();
+    }
+});
+
+
+/* ---------------------------------------------------------
+   About modal
+   --------------------------------------------------------- */
+
+function openModal() {
+    aboutModal.hidden = false;
+    document.body.style.overflow = "hidden";
+}
+
+
+function closeAboutModal() {
+    aboutModal.hidden = true;
+    document.body.style.overflow = "";
+}
+
+
+infoButton.addEventListener("click", openModal);
+closeModal.addEventListener("click", closeAboutModal);
+
+
+aboutModal.addEventListener("click", (event) => {
+    if (event.target === aboutModal) {
+        closeAboutModal();
+    }
+});
+
+
+document.addEventListener("keydown", (event) => {
+    if (
+        event.key === "Escape" &&
+        !aboutModal.hidden
+    ) {
+        closeAboutModal();
+    }
+});
+
+
+/* ---------------------------------------------------------
+   Add button
+   --------------------------------------------------------- */
+
+addButton.addEventListener("click", () => {
+    /*
+     * Reserved for future ClearPath functionality:
+     *
+     * - Upload documents
+     * - Download forms
+     * - Police clearance information
+     * - Document checklist
+     * - Start eligibility assessment
+     */
+
+    messageInput.focus();
+});
+
+
+/* ---------------------------------------------------------
+   Initialisation
+   --------------------------------------------------------- */
+
+resizeInput();
+updateSendButton();      "I want to check whether I may be eligible for expungement or another form of criminal-record relief.",
     assess: true
   },
 
