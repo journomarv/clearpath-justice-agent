@@ -1,7 +1,10 @@
 from fastapi import APIRouter, HTTPException
 
 from app.schemas.chat import ChatRequest, ChatResponse
-from app.services.deepseek import DeepSeekService
+from app.services.deepseek import (
+    DeepSeekError,
+    DeepSeekService,
+)
 from app.services.knowledge import KnowledgeService
 
 router = APIRouter(tags=["chat"])
@@ -35,8 +38,11 @@ async def chat(request: ChatRequest):
             knowledge=context,
             pathway=request.pathway,
         )
-    except ValueError as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except DeepSeekError as exc:
+    raise HTTPException(
+        status_code=503,
+        detail=str(exc),
+    ) from None
     except Exception:
         raise HTTPException(
             status_code=502,
