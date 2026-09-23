@@ -399,4 +399,4 @@ class KnowledgeService:
                     }
                 )
 
-        return documents
+                return documents
