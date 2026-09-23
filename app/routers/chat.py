@@ -15,9 +15,17 @@ router = APIRouter(tags=["chat"])
 async def chat(request: ChatRequest):
     knowledge_service = KnowledgeService()
 
+    # Determine the pathway when the frontend has not supplied one.
+    pathway = request.pathway
+
+    if not pathway:
+        pathway = knowledge_service.identify_pathway(
+            request.message
+        )
+
     context = knowledge_service.retrieve(
         message=request.message,
-        pathway=request.pathway,
+        pathway=pathway,
     )
 
     if not context:
@@ -37,7 +45,7 @@ async def chat(request: ChatRequest):
         result = await service.generate_response(
             message=request.message,
             knowledge=context,
-            pathway=request.pathway,
+            pathway=pathway,
         )
 
     except DeepSeekError as exc:
@@ -54,7 +62,7 @@ async def chat(request: ChatRequest):
 
     return ChatResponse(
         answer=result["answer"],
-        pathway=result.get("pathway", request.pathway),
+        pathway=result.get("pathway", pathway),
         knowledge_sources=result.get("knowledge_sources", []),
         uncertainty=result.get("uncertainty"),
         next_step=result.get("next_step"),

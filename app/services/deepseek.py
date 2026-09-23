@@ -118,8 +118,9 @@ ClearPath knowledge context:
 
         except httpx.HTTPStatusError as exc:
             logger.warning(
-                "DeepSeek returned HTTP status %s.",
+                "DeepSeek returned HTTP status %s. Response: %s",
                 exc.response.status_code,
+                exc.response.text[:1000],
             )
             raise DeepSeekError(
                 "The AI service returned an error."

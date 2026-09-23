@@ -371,4 +371,30 @@ class KnowledgeService:
     ) -> str:
         """
         Build a compact context block for the language model.
-       
+        """
+        documents = self.get_relevant_documents(
+            message=message,
+            pathway=pathway,
+        )
+
+        if not documents:
+            return ""
+
+        context_parts = []
+
+        for document in documents:
+            title = document.get("title", "Untitled source")
+            source = document.get("source", "")
+            content = document.get("content", "")
+
+            section = f"### {title}"
+
+            if source:
+                section += f"\nSource: {source}"
+
+            if content:
+                section += f"\n{content}"
+
+            context_parts.append(section)
+
+        return "\n\n".join(context_parts)
