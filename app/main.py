@@ -48,46 +48,4 @@ app.mount(
     "/frontend",
     StaticFiles(directory=FRONTEND_DIR),
     name="frontend",
-)    allow_credentials=False,
-    allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization"],
 )
-
-
-# ---------------------------------------------------------
-# API routers
-# ---------------------------------------------------------
-
-app.include_router(health.router)
-app.include_router(chat.router)
-app.include_router(assess.router)
-
-
-# ---------------------------------------------------------
-# Frontend
-# ---------------------------------------------------------
-
-@app.get("/")
-async def root():
-    """Serve the Path conversational interface."""
-    return FileResponse(FRONTEND_DIR / "index.html")
-
-
-# Serve frontend assets such as JavaScript and CSS.
-app.mount(
-    "/frontend",
-    StaticFiles(directory=FRONTEND_DIR),
-    name="frontend",
-)app.include_router(assess.router)
-
-
-@app.get("/")
-async def root():
-    return FileResponse(FRONTEND_DIR / "index.html")
-
-
-app.mount(
-    "/frontend",
-    StaticFiles(directory=FRONTEND_DIR),
-    name="frontend",
-)        
