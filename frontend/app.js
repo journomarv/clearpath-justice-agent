@@ -1,10 +1,9 @@
 (() => {
   "use strict";
 
-
   /*
    * ---------------------------------------------------------
-   * API
+   * CONFIGURATION
    * ---------------------------------------------------------
    */
 
@@ -13,12 +12,8 @@
     "https://api.clearpathjustice.org.za"
   ).replace(/\/$/, "");
 
-
-  const endpoints = {
-    health: API_BASE + "/health",
-    chat: API_BASE + "/chat",
-    assess: API_BASE + "/assess"
-  };
+  const CHAT_ENDPOINT = `${API_BASE}/chat`;
+  const HEALTH_ENDPOINT = `${API_BASE}/health`;
 
 
   /*
@@ -27,14 +22,863 @@
    * ---------------------------------------------------------
    */
 
-  const $ = (id) => document.getElementById(id);
+  const messages = document.getElementById("messages");
+  const welcome = document.getElementById("welcome");
+  const chatContainer = document.getElementById("chatContainer");
 
-  const conversation = $("conversation");
-  const welcome = $("welcome");
-  const messages = $("messages");
+  const chatForm = document.getElementById("chatForm");
+  const messageInput = document.getElementById("messageInput");
+  const sendButton = document.getElementById("sendButton");
 
-  const form = $("chatForm");
-  const input = $("messageInput");
+  const statusDot = document.getElementById("statusDot");
+  const statusText = document.getElementById("statusText");
+
+  const newChatButton = document.getElementById("newChatButton");
+  const infoButton = document.getElementById("infoButton");
+  const aboutButton = document.getElementById("aboutButton");
+
+  const aboutModal = document.getElementById("aboutModal");
+  const closeModal = document.getElementById("closeModal");
+
+  const mobileMenuButton =
+    document.getElementById("mobileMenuButton");
+
+  const sidebar =
+    document.getElementById("sidebar");
+
+
+  /*
+   * ---------------------------------------------------------
+   * STATE
+   * ---------------------------------------------------------
+   */
+
+  let sending = false;
+  let currentPathway = null;
+
+  const conversationHistory = [];
+
+
+  /*
+   * ---------------------------------------------------------
+   * SECURITY
+   * ---------------------------------------------------------
+   */
+
+  function escapeHtml(value) {
+    return String(value ?? "").replace(
+      /[&<>"']/g,
+      (character) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+      })[character]
+    );
+  }
+
+
+  /*
+   * ---------------------------------------------------------
+   * RESPONSE FORMATTING
+   * ---------------------------------------------------------
+   */
+
+  function formatResponse(value) {
+    let text = escapeHtml(value);
+
+    text = text.replace(
+      /\*\*(.*?)\*\*/g,
+      "<strong>$1</strong>"
+    );
+
+    text = text.replace(
+      /^### (.*?)$/gm,
+      "<strong>$1</strong>"
+    );
+
+    text = text.replace(
+      /^## (.*?)$/gm,
+      "<strong>$1</strong>"
+    );
+
+    text = text.replace(
+      /^# (.*?)$/gm,
+      "<strong>$1</strong>"
+    );
+
+    text = text.replace(
+      /^\s*[-•]\s+(.*)$/gm,
+      "• $1"
+    );
+
+    text = text.replace(
+      /\n\n/g,
+      "<br><br>"
+    );
+
+    text = text.replace(
+      /\n/g,
+      "<br>"
+    );
+
+    return text;
+  }
+
+
+  function formatPathway(pathway) {
+    if (!pathway) {
+      return "";
+    }
+
+    return String(pathway)
+      .replace(/_/g, " ")
+      .replace(
+        /\b\w/g,
+        (letter) => letter.toUpperCase()
+      );
+  }
+
+
+  /*
+   * ---------------------------------------------------------
+   * UI
+   * ---------------------------------------------------------
+   */
+
+  function scrollToBottom() {
+    requestAnimationFrame(() => {
+      chatContainer.scrollTo({
+        top: chatContainer.scrollHeight,
+        behavior: "smooth"
+      });
+    });
+  }
+
+
+  function resizeInput() {
+    messageInput.style.height = "auto";
+
+    messageInput.style.height =
+      Math.min(
+        messageInput.scrollHeight,
+        180
+      ) + "px";
+  }
+
+
+  function updateSendButton() {
+    sendButton.disabled =
+      sending ||
+      !messageInput.value.trim();
+  }
+
+
+  function showConversation() {
+    welcome.hidden = true;
+    messages.classList.add("has-messages");
+  }
+
+
+  /*
+   * ---------------------------------------------------------
+   * USER MESSAGE
+   * ---------------------------------------------------------
+   */
+
+  function addUserMessage(text) {
+    showConversation();
+
+    const wrapper =
+      document.createElement("article");
+
+    wrapper.className =
+      "message message-user";
+
+    wrapper.innerHTML = `
+      <div class="user-message-inner">
+        ${escapeHtml(text)}
+      </div>
+    `;
+
+    messages.appendChild(wrapper);
+
+    scrollToBottom();
+  }
+
+
+  /*
+   * ---------------------------------------------------------
+   * PATH MESSAGE
+   * ---------------------------------------------------------
+   */
+
+  function addAssistantMessage(data) {
+    showConversation();
+
+    const answer =
+      data.answer ||
+      data.response ||
+      data.message ||
+      "I couldn't produce a response.";
+
+    currentPathway =
+      data.pathway ||
+      currentPathway;
+
+
+    const wrapper =
+      document.createElement("article");
+
+    wrapper.className =
+      "message message-assistant";
+
+
+    const inner =
+      document.createElement("div");
+
+    inner.className =
+      "assistant-inner";
+
+
+    const identity =
+      document.createElement("div");
+
+    identity.className =
+      "assistant-identity";
+
+
+    identity.innerHTML = `
+      <span class="assistant-mark">P</span>
+      <span>Path</span>
+    `;
+
+
+    const answerElement =
+      document.createElement("div");
+
+    answerElement.className =
+      "assistant-answer";
+
+    answerElement.innerHTML =
+      formatResponse(answer);
+
+
+    inner.appendChild(identity);
+    inner.appendChild(answerElement);
+
+
+    /*
+     * Response metadata
+     */
+
+    const metadata =
+      document.createElement("div");
+
+    metadata.className =
+      "response-metadata";
+
+
+    if (data.pathway) {
+      const pathway =
+        document.createElement("span");
+
+      pathway.textContent =
+        formatPathway(data.pathway);
+
+      metadata.appendChild(pathway);
+    }
+
+
+    if (data.next_step) {
+      const next =
+        document.createElement("div");
+
+      next.className =
+        "next-step";
+
+      next.innerHTML =
+        `<strong>Possible next step:</strong> ${
+          escapeHtml(data.next_step)
+        }`;
+
+      metadata.appendChild(next);
+    }
+
+
+    if (data.uncertainty) {
+      const note =
+        document.createElement("div");
+
+      note.className =
+        "uncertainty";
+
+      note.innerHTML =
+        `<strong>Important:</strong> ${
+          escapeHtml(data.uncertainty)
+        }`;
+
+      metadata.appendChild(note);
+    }
+
+
+    if (metadata.children.length > 0) {
+      inner.appendChild(metadata);
+    }
+
+
+    /*
+     * Sources
+     */
+
+    if (
+      Array.isArray(data.knowledge_sources) &&
+      data.knowledge_sources.length > 0
+    ) {
+      const sources =
+        document.createElement("details");
+
+      sources.className =
+        "sources";
+
+      const summary =
+        document.createElement("summary");
+
+      summary.textContent =
+        "Information used";
+
+      sources.appendChild(summary);
+
+
+      const list =
+        document.createElement("ul");
+
+      data.knowledge_sources
+        .filter(Boolean)
+        .forEach((source) => {
+          const item =
+            document.createElement("li");
+
+          item.textContent = source;
+
+          list.appendChild(item);
+        });
+
+      sources.appendChild(list);
+
+      inner.appendChild(sources);
+    }
+
+
+    wrapper.appendChild(inner);
+    messages.appendChild(wrapper);
+
+    scrollToBottom();
+  }
+
+
+  /*
+   * ---------------------------------------------------------
+   * TYPING INDICATOR
+   * ---------------------------------------------------------
+   */
+
+  function addTypingIndicator() {
+    showConversation();
+
+    const wrapper =
+      document.createElement("article");
+
+    wrapper.className =
+      "message message-assistant typing-message";
+
+    wrapper.id =
+      "typingIndicator";
+
+
+    wrapper.innerHTML = `
+      <div class="assistant-inner">
+
+        <div class="assistant-identity">
+          <span class="assistant-mark">P</span>
+          <span>Path</span>
+        </div>
+
+        <div class="typing-indicator">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+
+      </div>
+    `;
+
+
+    messages.appendChild(wrapper);
+
+    scrollToBottom();
+
+    return wrapper;
+  }
+
+
+  function removeTypingIndicator() {
+    const indicator =
+      document.getElementById("typingIndicator");
+
+    if (indicator) {
+      indicator.remove();
+    }
+  }
+
+
+  /*
+   * ---------------------------------------------------------
+   * ERROR
+   * ---------------------------------------------------------
+   */
+
+  function addErrorMessage(message) {
+    showConversation();
+
+    const wrapper =
+      document.createElement("article");
+
+    wrapper.className =
+      "message message-assistant";
+
+
+    const inner =
+      document.createElement("div");
+
+    inner.className =
+      "assistant-inner";
+
+
+    inner.innerHTML = `
+      <div class="assistant-identity">
+        <span class="assistant-mark">P</span>
+        <span>Path</span>
+      </div>
+
+      <div class="error-message">
+        ${escapeHtml(message)}
+      </div>
+    `;
+
+
+    wrapper.appendChild(inner);
+    messages.appendChild(wrapper);
+
+    scrollToBottom();
+  }
+
+
+  /*
+   * ---------------------------------------------------------
+   * API
+   * ---------------------------------------------------------
+   */
+
+  async function requestChat(message) {
+    const response =
+      await fetch(
+        CHAT_ENDPOINT,
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+
+          body: JSON.stringify({
+            message: message,
+            pathway: currentPathway
+          })
+        }
+      );
+
+
+    let data = {};
+
+    try {
+      data = await response.json();
+    } catch (_) {
+      data = {};
+    }
+
+
+    if (!response.ok) {
+      throw new Error(
+        data.detail ||
+        data.message ||
+        `Service error (${response.status}).`
+      );
+    }
+
+
+    return data;
+  }
+
+
+  /*
+   * ---------------------------------------------------------
+   * SEND MESSAGE
+   * ---------------------------------------------------------
+   */
+
+  async function sendMessage(message) {
+    if (
+      !message ||
+      sending
+    ) {
+      return;
+    }
+
+
+    sending = true;
+    updateSendButton();
+
+    addUserMessage(message);
+
+    conversationHistory.push({
+      role: "user",
+      content: message
+    });
+
+
+    messageInput.value = "";
+    resizeInput();
+
+    const typing =
+      addTypingIndicator();
+
+
+    try {
+      const data =
+        await requestChat(message);
+
+
+      if (typing) {
+        typing.remove();
+      }
+
+
+      currentPathway =
+        data.pathway ||
+        currentPathway;
+
+
+      conversationHistory.push({
+        role: "assistant",
+        content: data.answer || ""
+      });
+
+
+      addAssistantMessage(data);
+
+    } catch (error) {
+
+      if (typing) {
+        typing.remove();
+      }
+
+
+      addErrorMessage(
+        error.message ||
+        "I couldn't reach the ClearPath Justice service."
+      );
+
+      console.error(
+        "Path chat error:",
+        error
+      );
+
+    } finally {
+
+      sending = false;
+
+      updateSendButton();
+
+      messageInput.focus();
+    }
+  }
+
+
+  /*
+   * ---------------------------------------------------------
+   * NEW CHAT
+   * ---------------------------------------------------------
+   */
+
+  function newConversation() {
+    messages.innerHTML = "";
+
+    messages.classList.remove(
+      "has-messages"
+    );
+
+    welcome.hidden = false;
+
+    currentPathway = null;
+
+    conversationHistory.length = 0;
+
+    messageInput.value = "";
+
+    resizeInput();
+
+    updateSendButton();
+
+    messageInput.focus();
+
+    closeSidebar();
+  }
+
+
+  /*
+   * ---------------------------------------------------------
+   * HEALTH CHECK
+   * ---------------------------------------------------------
+   */
+
+  async function checkHealth() {
+    try {
+
+      const response =
+        await fetch(
+          HEALTH_ENDPOINT,
+          {
+            method: "GET",
+            cache: "no-store"
+          }
+        );
+
+
+      if (!response.ok) {
+        throw new Error(
+          "Health check failed"
+        );
+      }
+
+
+      statusDot.classList.add("online");
+      statusDot.classList.remove("offline");
+
+      statusText.textContent =
+        "Service online";
+
+    } catch (error) {
+
+      statusDot.classList.remove("online");
+      statusDot.classList.add("offline");
+
+      statusText.textContent =
+        "Service unavailable";
+
+      console.error(
+        "Path health check:",
+        error
+      );
+    }
+  }
+
+
+  /*
+   * ---------------------------------------------------------
+   * STARTER PROMPTS
+   * ---------------------------------------------------------
+   */
+
+  document
+    .querySelectorAll("[data-prompt]")
+    .forEach((button) => {
+
+      button.addEventListener(
+        "click",
+        () => {
+
+          const prompt =
+            button.dataset.prompt;
+
+          sendMessage(prompt);
+        }
+      );
+
+    });
+
+
+  /*
+   * ---------------------------------------------------------
+   * FORM
+   * ---------------------------------------------------------
+   */
+
+  chatForm.addEventListener(
+    "submit",
+    (event) => {
+
+      event.preventDefault();
+
+      const message =
+        messageInput.value.trim();
+
+      if (message) {
+        sendMessage(message);
+      }
+    }
+  );
+
+
+  /*
+   * ---------------------------------------------------------
+   * TEXT INPUT
+   * ---------------------------------------------------------
+   */
+
+  messageInput.addEventListener(
+    "input",
+    () => {
+
+      resizeInput();
+      updateSendButton();
+
+    }
+  );
+
+
+  messageInput.addEventListener(
+    "keydown",
+    (event) => {
+
+      if (
+        event.key === "Enter" &&
+        !event.shiftKey &&
+        !event.isComposing
+      ) {
+
+        event.preventDefault();
+
+        if (!sendButton.disabled) {
+          chatForm.requestSubmit();
+        }
+      }
+
+    }
+  );
+
+
+  /*
+   * ---------------------------------------------------------
+   * MODAL
+   * ---------------------------------------------------------
+   */
+
+  function openModal() {
+    aboutModal.hidden = false;
+  }
+
+
+  function closeAboutModal() {
+    aboutModal.hidden = true;
+  }
+
+
+  infoButton.addEventListener(
+    "click",
+    openModal
+  );
+
+
+  aboutButton.addEventListener(
+    "click",
+    () => {
+      openModal();
+      closeSidebar();
+    }
+  );
+
+
+  closeModal.addEventListener(
+    "click",
+    closeAboutModal
+  );
+
+
+  aboutModal.addEventListener(
+    "click",
+    (event) => {
+
+      if (
+        event.target ===
+        aboutModal
+      ) {
+        closeAboutModal();
+      }
+
+    }
+  );
+
+
+  document.addEventListener(
+    "keydown",
+    (event) => {
+
+      if (event.key === "Escape") {
+        closeAboutModal();
+      }
+
+    }
+  );
+
+
+  /*
+   * ---------------------------------------------------------
+   * MOBILE SIDEBAR
+   * ---------------------------------------------------------
+   */
+
+  function openSidebar() {
+    sidebar.classList.add("open");
+  }
+
+
+  function closeSidebar() {
+    sidebar.classList.remove("open");
+  }
+
+
+  mobileMenuButton.addEventListener(
+    "click",
+    openSidebar
+  );
+
+
+  /*
+   * ---------------------------------------------------------
+   * NEW CHAT
+   * ---------------------------------------------------------
+   */
+
+  newChatButton.addEventListener(
+    "click",
+    newConversation
+  );
+
+
+  /*
+   * ---------------------------------------------------------
+   * INITIALISE
+   * ---------------------------------------------------------
+   */
+
+  resizeInput();
+  updateSendButton();
+  checkHealth();
+
+})();  const input = $("messageInput");
   const sendButton = $("sendButton");
 
   const statusText = $("statusText");
