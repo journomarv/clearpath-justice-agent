@@ -19,18 +19,17 @@
   const newChatButton = $("newChatButton");
   const aboutButton = $("aboutButton");
   const infoButton = $("infoButton");
+
   const aboutModal = $("aboutModal");
   const closeModal = $("closeModal");
+  const modalDone = $("modalDone");
 
   const mobileMenuButton = $("mobileMenuButton");
   const sidebar = $("sidebar");
+  const mobileScrim = $("mobileScrim");
 
   let sending = false;
 
-
-  /* ---------------------------------------------------------
-     Utilities
-  --------------------------------------------------------- */
 
   function escapeHtml(value) {
     return String(value ?? "")
@@ -43,24 +42,8 @@
 
 
   function formatText(text) {
-    let html = escapeHtml(text);
-
-    html = html.replace(
-      /\*\*(.+?)\*\*/g,
-      "<strong>$1</strong>"
-    );
-
-    html = html.replace(
-      /`([^`]+)`/g,
-      "<code>$1</code>"
-    );
-
-    html = html.replace(
-      /\n/g,
-      "<br>"
-    );
-
-    return html;
+    return escapeHtml(text)
+      .replace(/\n/g, "<br>");
   }
 
 
@@ -68,66 +51,70 @@
     const container = $("chatContainer");
 
     if (container) {
-      container.scrollTop = container.scrollHeight;
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior: "smooth"
+      });
     }
-
-    window.scrollTo({
-      top: document.body.scrollHeight,
-      behavior: "smooth"
-    });
   }
 
 
   function setStatus(state, text) {
-    statusDot.className = "status-dot";
-
-    if (state) {
-      statusDot.classList.add(state);
-    }
+    statusDot.className =
+      "status-dot" +
+      (state ? " " + state : "");
 
     statusText.textContent = text;
   }
 
 
-  /* ---------------------------------------------------------
-     Health check
-  --------------------------------------------------------- */
-
   async function checkHealth() {
     try {
-      const response = await fetch(`${API_BASE}/health`, {
-        method: "GET",
-        headers: {
-          Accept: "application/json"
+      const response = await fetch(
+        API_BASE + "/health",
+        {
+          method: "GET",
+          headers: {
+            Accept: "application/json"
+          }
         }
-      });
+      );
 
       if (!response.ok) {
         throw new Error("Health check failed");
       }
 
-      setStatus("online", "Path online");
+      setStatus(
+        "online",
+        "Path online"
+      );
+
     } catch (error) {
-      console.error("Health check:", error);
-      setStatus("offline", "Path unavailable");
+
+      console.error(
+        "Health check:",
+        error
+      );
+
+      setStatus(
+        "offline",
+        "Path unavailable"
+      );
     }
   }
 
 
-  /* ---------------------------------------------------------
-     Messages
-  --------------------------------------------------------- */
-
   function addUserMessage(text) {
-    const wrapper = document.createElement("div");
+    const wrapper =
+      document.createElement("div");
 
-    wrapper.className = "message message-user";
+    wrapper.className =
+      "message message-user";
 
-    wrapper.innerHTML = `
-      <div class="message-content">
-        ${formatText(text)}
-      </div>
-    `;
+    wrapper.innerHTML =
+      '<div class="message-user-content">' +
+      formatText(text) +
+      "</div>";
 
     messages.appendChild(wrapper);
 
@@ -135,63 +122,109 @@
   }
 
 
-  function addAssistantMessage(data) {
-    const wrapper = document.createElement("div");
+  function formatPathway(pathway) {
 
-    wrapper.className = "message message-assistant";
+    const names = {
+      general_expungement:
+        "Criminal-record relief",
+
+      cannabis_related_relief:
+        "Cannabis-related relief",
+
+      child_justice:
+        "Child justice",
+
+      police_clearance:
+        "Police clearance",
+
+      application_prep:
+        "Application preparation",
+
+      tracking:
+        "Application tracking",
+
+      post_decision:
+        "After a decision"
+    };
+
+    return names[pathway] || pathway;
+  }
+
+
+  function addAssistantMessage(data) {
+
+    const wrapper =
+      document.createElement("div");
+
+    wrapper.className =
+      "message message-assistant";
 
     const answer =
       data?.answer ||
-      "I wasn't able to generate a response.";
+      "I wasn’t able to generate a response.";
 
     let metadata = "";
 
+
     if (data?.pathway) {
-      metadata += `
-        <span class="message-meta-item">
-          ${escapeHtml(formatPathway(data.pathway))}
-        </span>
-      `;
+
+      metadata +=
+        '<span class="pathway-chip">' +
+        escapeHtml(
+          formatPathway(data.pathway)
+        ) +
+        "</span>";
     }
+
 
     if (data?.next_step) {
-      metadata += `
-        <div class="next-step">
-          <strong>Next step</strong>
-          <span>${formatText(data.next_step)}</span>
-        </div>
-      `;
+
+      metadata +=
+        '<div class="next-step">' +
+          '<span class="next-step-label">' +
+            "Possible next step" +
+          "</span>" +
+          "<span>" +
+            formatText(data.next_step) +
+          "</span>" +
+        "</div>";
     }
+
 
     if (data?.uncertainty) {
-      metadata += `
-        <div class="uncertainty">
-          ${formatText(data.uncertainty)}
-        </div>
-      `;
+
+      metadata +=
+        '<div class="uncertainty">' +
+        formatText(data.uncertainty) +
+        "</div>";
     }
 
-    wrapper.innerHTML = `
-      <div class="assistant-mark">P</div>
 
-      <div class="assistant-body">
+    wrapper.innerHTML =
+      '<div class="assistant-avatar" aria-hidden="true">' +
+        "P" +
+      "</div>" +
 
-        <div class="assistant-name">
-          Path
-        </div>
+      '<div class="assistant-body">' +
 
-        <div class="message-content">
-          ${formatText(answer)}
-        </div>
+        '<div class="assistant-name">' +
+          "Path" +
+        "</div>" +
 
-        ${
+        '<div class="message-content">' +
+          formatText(answer) +
+        "</div>" +
+
+        (
           metadata
-            ? `<div class="message-metadata">${metadata}</div>`
+            ? '<div class="message-metadata">' +
+                metadata +
+              "</div>"
             : ""
-        }
+        ) +
 
-      </div>
-    `;
+      "</div>";
+
 
     messages.appendChild(wrapper);
 
@@ -200,26 +233,31 @@
 
 
   function addErrorMessage(message) {
-    const wrapper = document.createElement("div");
+
+    const wrapper =
+      document.createElement("div");
 
     wrapper.className =
       "message message-assistant message-error";
 
-    wrapper.innerHTML = `
-      <div class="assistant-mark">P</div>
+    wrapper.innerHTML =
 
-      <div class="assistant-body">
+      '<div class="assistant-avatar" aria-hidden="true">' +
+        "P" +
+      "</div>" +
 
-        <div class="assistant-name">
-          Path
-        </div>
+      '<div class="assistant-body">' +
 
-        <div class="message-content">
-          ${formatText(message)}
-        </div>
+        '<div class="assistant-name">' +
+          "Path" +
+        "</div>" +
 
-      </div>
-    `;
+        '<div class="message-content">' +
+          formatText(message) +
+        "</div>" +
+
+      "</div>";
+
 
     messages.appendChild(wrapper);
 
@@ -228,30 +266,36 @@
 
 
   function addTypingIndicator() {
-    const wrapper = document.createElement("div");
+
+    const wrapper =
+      document.createElement("div");
 
     wrapper.className =
       "message message-assistant typing-message";
 
-    wrapper.id = "typingIndicator";
+    wrapper.id =
+      "typingIndicator";
 
-    wrapper.innerHTML = `
-      <div class="assistant-mark">P</div>
+    wrapper.innerHTML =
 
-      <div class="assistant-body">
+      '<div class="assistant-avatar" aria-hidden="true">' +
+        "P" +
+      "</div>" +
 
-        <div class="assistant-name">
-          Path
-        </div>
+      '<div class="assistant-body">' +
 
-        <div class="typing-indicator">
-          <span></span>
-          <span></span>
-          <span></span>
-        </div>
+        '<div class="assistant-name">' +
+          "Path" +
+        "</div>" +
 
-      </div>
-    `;
+        '<div class="typing-indicator" aria-label="Path is thinking">' +
+          "<span></span>" +
+          "<span></span>" +
+          "<span></span>" +
+        "</div>" +
+
+      "</div>";
+
 
     messages.appendChild(wrapper);
 
@@ -260,7 +304,9 @@
 
 
   function removeTypingIndicator() {
-    const indicator = $("typingIndicator");
+
+    const indicator =
+      $("typingIndicator");
 
     if (indicator) {
       indicator.remove();
@@ -268,82 +314,95 @@
   }
 
 
-  function formatPathway(pathway) {
-    const names = {
-      general_expungement: "General expungement",
-      cannabis_related_relief: "Cannabis-related relief",
-      child_justice: "Child justice",
-      police_clearance: "Police clearance",
-      application_prep: "Application preparation",
-      tracking: "Application tracking",
-      post_decision: "After a decision"
-    };
-
-    return names[pathway] || pathway;
-  }
-
-
-  /* ---------------------------------------------------------
-     Chat
-  --------------------------------------------------------- */
-
   async function sendMessage(text) {
-    const message = String(text || "").trim();
+
+    const message =
+      String(text || "").trim();
 
     if (!message || sending) {
       return;
     }
 
+
     sending = true;
 
     messageInput.value = "";
+
     autoResize();
 
-    sendButton.disabled = true;
+    updateSendButton();
+
 
     if (welcome) {
       welcome.classList.add("hidden");
     }
 
+
     addUserMessage(message);
+
     addTypingIndicator();
 
+
     try {
-      const response = await fetch(`${API_BASE}/chat`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json"
-        },
-        body: JSON.stringify({
-          message,
-          pathway: null
-        })
-      });
+
+      const response =
+        await fetch(
+          API_BASE + "/chat",
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json",
+
+              Accept:
+                "application/json"
+            },
+
+            body: JSON.stringify({
+              message: message,
+              pathway: null
+            })
+          }
+        );
+
 
       let data = null;
 
+
       try {
-        data = await response.json();
+        data =
+          await response.json();
       } catch {
         data = null;
       }
 
-      if (!response.ok) {
-        const detail =
-          data?.detail ||
-          "Path could not process that request right now.";
 
-        throw new Error(detail);
+      if (!response.ok) {
+
+        throw new Error(
+          data?.detail ||
+          "Path could not process that request right now."
+        );
       }
 
+
       removeTypingIndicator();
+
       addAssistantMessage(data);
 
-      setStatus("online", "Path online");
+      setStatus(
+        "online",
+        "Path online"
+      );
+
 
     } catch (error) {
-      console.error("Chat error:", error);
+
+      console.error(
+        "Chat error:",
+        error
+      );
 
       removeTypingIndicator();
 
@@ -352,22 +411,25 @@
         "Something went wrong while connecting to Path."
       );
 
-      setStatus("offline", "Connection issue");
+      setStatus(
+        "offline",
+        "Connection issue"
+      );
+
 
     } finally {
+
       sending = false;
 
       updateSendButton();
+
       messageInput.focus();
     }
   }
 
 
-  /* ---------------------------------------------------------
-     Composer
-  --------------------------------------------------------- */
-
   function updateSendButton() {
+
     sendButton.disabled =
       sending ||
       !messageInput.value.trim();
@@ -375,63 +437,81 @@
 
 
   function autoResize() {
-    messageInput.style.height = "auto";
-
-    const maxHeight = 180;
 
     messageInput.style.height =
-      `${Math.min(messageInput.scrollHeight, maxHeight)}px`;
+      "auto";
+
+    messageInput.style.height =
+      Math.min(
+        messageInput.scrollHeight,
+        190
+      ) + "px";
   }
 
 
-  chatForm.addEventListener("submit", (event) => {
-    event.preventDefault();
+  chatForm.addEventListener(
+    "submit",
+    (event) => {
 
-    sendMessage(messageInput.value);
-  });
-
-
-  messageInput.addEventListener("input", () => {
-    autoResize();
-    updateSendButton();
-  });
-
-
-  messageInput.addEventListener("keydown", (event) => {
-    if (
-      event.key === "Enter" &&
-      !event.shiftKey
-    ) {
       event.preventDefault();
 
-      if (!sendButton.disabled) {
-        chatForm.requestSubmit();
+      sendMessage(
+        messageInput.value
+      );
+    }
+  );
+
+
+  messageInput.addEventListener(
+    "input",
+    () => {
+
+      autoResize();
+
+      updateSendButton();
+    }
+  );
+
+
+  messageInput.addEventListener(
+    "keydown",
+    (event) => {
+
+      if (
+        event.key === "Enter" &&
+        !event.shiftKey
+      ) {
+
+        event.preventDefault();
+
+        if (!sendButton.disabled) {
+          chatForm.requestSubmit();
+        }
       }
     }
-  });
+  );
 
-
-  /* ---------------------------------------------------------
-     Starter prompts
-  --------------------------------------------------------- */
 
   document
     .querySelectorAll(".starter-card")
     .forEach((card) => {
-      card.addEventListener("click", () => {
-        const prompt =
-          card.dataset.prompt || "";
 
-        sendMessage(prompt);
-      });
+      card.addEventListener(
+        "click",
+        () => {
+
+          sendMessage(
+            card.dataset.prompt || ""
+          );
+        }
+      );
     });
 
 
-  /* ---------------------------------------------------------
-     New chat
-  --------------------------------------------------------- */
-
   function resetChat() {
+
+    removeTypingIndicator();
+
     messages.innerHTML = "";
 
     if (welcome) {
@@ -441,11 +521,12 @@
     messageInput.value = "";
 
     autoResize();
+
     updateSendButton();
 
-    messageInput.focus();
-
     closeSidebar();
+
+    messageInput.focus();
   }
 
 
@@ -455,25 +536,30 @@
   );
 
 
-  /* ---------------------------------------------------------
-     About modal
-  --------------------------------------------------------- */
-
   function openModal() {
+
     aboutModal.hidden = false;
 
     document.body.classList.add(
       "modal-open"
     );
+
+    setTimeout(
+      () => modalDone?.focus(),
+      0
+    );
   }
 
 
   function closeAboutModal() {
+
     aboutModal.hidden = true;
 
     document.body.classList.remove(
       "modal-open"
     );
+
+    messageInput.focus();
   }
 
 
@@ -492,48 +578,72 @@
     closeAboutModal
   );
 
+  modalDone.addEventListener(
+    "click",
+    closeAboutModal
+  );
+
 
   aboutModal.addEventListener(
     "click",
     (event) => {
-      if (event.target === aboutModal) {
+
+      if (
+        event.target === aboutModal
+      ) {
         closeAboutModal();
       }
     }
   );
 
-
-  document.addEventListener(
-    "keydown",
-    (event) => {
-      if (event.key === "Escape") {
-        closeAboutModal();
-        closeSidebar();
-      }
-    }
-  );
-
-
-  /* ---------------------------------------------------------
-     Mobile sidebar
-  --------------------------------------------------------- */
 
   function openSidebar() {
-    sidebar.classList.add("open");
-    document.body.classList.add("sidebar-open");
+
+    sidebar.classList.add(
+      "open"
+    );
+
+    mobileScrim.hidden = false;
+
+    document.body.classList.add(
+      "sidebar-open"
+    );
+
+    mobileMenuButton.setAttribute(
+      "aria-expanded",
+      "true"
+    );
   }
 
 
   function closeSidebar() {
-    sidebar.classList.remove("open");
-    document.body.classList.remove("sidebar-open");
+
+    sidebar.classList.remove(
+      "open"
+    );
+
+    mobileScrim.hidden = true;
+
+    document.body.classList.remove(
+      "sidebar-open"
+    );
+
+    mobileMenuButton.setAttribute(
+      "aria-expanded",
+      "false"
+    );
   }
 
 
   mobileMenuButton.addEventListener(
     "click",
     () => {
-      if (sidebar.classList.contains("open")) {
+
+      if (
+        sidebar.classList.contains(
+          "open"
+        )
+      ) {
         closeSidebar();
       } else {
         openSidebar();
@@ -542,12 +652,30 @@
   );
 
 
-  /* ---------------------------------------------------------
-     Initialisation
-  --------------------------------------------------------- */
+  mobileScrim.addEventListener(
+    "click",
+    closeSidebar
+  );
+
+
+  document.addEventListener(
+    "keydown",
+    (event) => {
+
+      if (event.key === "Escape") {
+
+        closeAboutModal();
+
+        closeSidebar();
+      }
+    }
+  );
+
 
   autoResize();
+
   updateSendButton();
+
   checkHealth();
 
   messageInput.focus();
