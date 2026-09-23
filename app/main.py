@@ -9,17 +9,9 @@ from app.config import get_cors_origins
 from app.routers import assess, chat, health
 
 
-# ---------------------------------------------------------
-# Paths
-# ---------------------------------------------------------
-
 BASE_DIR = Path(__file__).resolve().parent.parent
 FRONTEND_DIR = BASE_DIR / "frontend"
 
-
-# ---------------------------------------------------------
-# FastAPI application
-# ---------------------------------------------------------
 
 app = FastAPI(
     title="ClearPath Justice Agent",
@@ -32,9 +24,31 @@ app = FastAPI(
 )
 
 
-# ---------------------------------------------------------
-# CORS
-# ---------------------------------------------------------
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=get_cors_origins(),
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
+)
+
+
+app.include_router(health.router)
+app.include_router(chat.router)
+app.include_router(assess.router)
+
+
+@app.get("/")
+async def root():
+    """Serve the Path conversational interface."""
+    return FileResponse(FRONTEND_DIR / "index.html")
+
+
+app.mount(
+    "/frontend",
+    StaticFiles(directory=FRONTEND_DIR),
+    name="frontend",
+)# ---------------------------------------------------------
 
 app.add_middleware(
     CORSMiddleware,
