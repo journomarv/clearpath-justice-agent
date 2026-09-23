@@ -1,40 +1,1006 @@
 (() => {
-"use strict";
+  "use strict";
 
-/*
 
-* ClearPath Justice — Path
-* 
-* Frontend only.
-* Backend/API architecture is unchanged.
-* 
-* Endpoints:
-* GET  /health
-* POST /chat
-* POST /assess
-* 
-* The API base can optionally be supplied with:
-* 
-* window.CLEARPATH_API_BASE = "https://api.clearpathjustice.org.za";
-* 
-* If it is not supplied, relative endpoints are used.
-  */
+  /*
+   * ---------------------------------------------------------
+   * API
+   * ---------------------------------------------------------
+   */
 
-const API_BASE = (
-window.CLEARPATH_API_BASE || ""
-).replace(//$/, "");
+  const API_BASE = (
+    window.CLEARPATH_API_BASE ||
+    "https://api.clearpathjustice.org.za"
+  ).replace(/\/$/, "");
 
-const endpoints = {
-health: "${API_BASE}/health",
-chat: "${API_BASE}/chat",
-assess: "${API_BASE}/assess"
-};
 
-const $ = (id) => document.getElementById(id);
+  const endpoints = {
+    health: API_BASE + "/health",
+    chat: API_BASE + "/chat",
+    assess: API_BASE + "/assess"
+  };
 
-const conversation = $("conversation");
-const welcome = $("welcome");
-const messages = $("messages");
+
+  /*
+   * ---------------------------------------------------------
+   * DOM
+   * ---------------------------------------------------------
+   */
+
+  const $ = (id) => document.getElementById(id);
+
+  const conversation = $("conversation");
+  const welcome = $("welcome");
+  const messages = $("messages");
+
+  const form = $("chatForm");
+  const input = $("messageInput");
+  const sendButton = $("sendButton");
+
+  const statusText = $("statusText");
+
+  const newChatButton = $("newChatButton");
+  const clearButton = $("clearButton");
+
+  const infoButton = $("infoButton");
+  const aboutModal = $("aboutModal");
+  const closeModal = $("closeModal");
+
+
+  /*
+   * ---------------------------------------------------------
+   * STATE
+   * ---------------------------------------------------------
+   */
+
+  let sending = false;
+  let pathway = null;
+
+
+  /*
+   * ---------------------------------------------------------
+   * STARTER PROMPTS
+   * ---------------------------------------------------------
+   */
+
+  const prompts = {
+
+    options:
+      "I want to understand what legal remedy may be available to me for my criminal record.",
+
+    eligibility:
+      "I want to check whether I may be eligible for expungement.",
+
+    documents:
+      "What documents do I need and what is the process for applying for expungement in South Africa?",
+
+    record:
+      "I want to understand what my criminal record means and what I can do about it."
+
+  };
+
+
+  /*
+   * ---------------------------------------------------------
+   * SECURITY / FORMATTING
+   * ---------------------------------------------------------
+   */
+
+  function escapeHtml(value) {
+
+    return String(value ?? "").replace(
+      /[&<>"']/g,
+      (character) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+      })[character]
+    );
+
+  }
+
+
+  function formatText(value) {
+
+    return escapeHtml(value)
+      .replace(
+        /\*\*(.*?)\*\*/g,
+        "<strong>$1</strong>"
+      )
+      .replace(
+        /\n/g,
+        "<br>"
+      );
+
+  }
+
+
+  function formatPathway(value) {
+
+    return String(value || "")
+      .replace(/_/g, " ")
+      .replace(
+        /\b\w/g,
+        (character) =>
+          character.toUpperCase()
+      );
+
+  }
+
+
+  /*
+   * ---------------------------------------------------------
+   * UI HELPERS
+   * ---------------------------------------------------------
+   */
+
+  function scrollToBottom() {
+
+    requestAnimationFrame(() => {
+
+      conversation.scrollTo({
+        top: conversation.scrollHeight,
+        behavior: "smooth"
+      });
+
+    });
+
+  }
+
+
+  function resizeInput() {
+
+    input.style.height = "auto";
+
+    input.style.height =
+      Math.min(
+        input.scrollHeight,
+        180
+      ) + "px";
+
+  }
+
+
+  function updateSendButton() {
+
+    sendButton.disabled =
+      sending ||
+      !input.value.trim();
+
+  }
+
+
+  function showChat() {
+
+    welcome.style.display = "none";
+
+    messages.classList.add("active");
+
+  }
+
+
+  /*
+   * ---------------------------------------------------------
+   * USER MESSAGE
+   * ---------------------------------------------------------
+   */
+
+  function addUserMessage(text) {
+
+    showChat();
+
+    const element =
+      document.createElement("article");
+
+    element.className =
+      "message user";
+
+    element.innerHTML =
+      '<div class="message-label">You</div>' +
+      '<div class="message-bubble">' +
+      escapeHtml(text) +
+      "</div>";
+
+    messages.appendChild(element);
+
+    scrollToBottom();
+
+  }
+
+
+  /*
+   * ---------------------------------------------------------
+   * TYPING
+   * ---------------------------------------------------------
+   */
+
+  function addTyping() {
+
+    const element =
+      document.createElement("article");
+
+    element.className =
+      "message assistant";
+
+    element.id =
+      "typingIndicator";
+
+    element.innerHTML =
+      '<div class="message-label">Path</div>' +
+      '<div class="message-bubble">' +
+      '<div class="typing" aria-label="Path is thinking">' +
+      "<span></span>" +
+      "<span></span>" +
+      "<span></span>" +
+      "</div>" +
+      "</div>";
+
+    messages.appendChild(element);
+
+    scrollToBottom();
+
+  }
+
+
+  function removeTyping() {
+
+    const indicator =
+      $("typingIndicator");
+
+    if (indicator) {
+      indicator.remove();
+    }
+
+  }
+
+
+  /*
+   * ---------------------------------------------------------
+   * PATH RESPONSE
+   * ---------------------------------------------------------
+   */
+
+  function addAssistantMessage(data) {
+
+    showChat();
+
+
+    const answer =
+      data.answer ||
+      data.response ||
+      data.message ||
+      data.content ||
+      "I couldn't produce a response.";
+
+
+    pathway =
+      data.pathway ||
+      pathway;
+
+
+    const metadata = [];
+
+
+    if (data.pathway) {
+
+      metadata.push(
+        "Pathway: " +
+        formatPathway(data.pathway)
+      );
+
+    }
+
+
+    if (data.next_step) {
+
+      metadata.push(
+        "Next step: " +
+        data.next_step
+      );
+
+    }
+
+
+    if (data.uncertainty) {
+
+      metadata.push(
+        "Note: " +
+        data.uncertainty
+      );
+
+    }
+
+
+    const sources =
+      Array.isArray(data.knowledge_sources)
+        ? data.knowledge_sources.filter(Boolean)
+        : [];
+
+
+    let metadataHtml = "";
+
+
+    if (metadata.length > 0) {
+
+      metadataHtml =
+        '<div class="response-meta">' +
+        metadata
+          .map(
+            (item) =>
+              "<div>" +
+              escapeHtml(item) +
+              "</div>"
+          )
+          .join("") +
+        "</div>";
+
+    }
+
+
+    let sourceHtml = "";
+
+
+    if (sources.length > 0) {
+
+      sourceHtml =
+        '<div class="source-card">' +
+        '<div class="source-title">' +
+        "Sources used" +
+        "</div>" +
+        "<ul>" +
+        sources
+          .map(
+            (source) =>
+              "<li>" +
+              escapeHtml(source) +
+              "</li>"
+          )
+          .join("") +
+        "</ul>" +
+        "</div>";
+
+    }
+
+
+    const element =
+      document.createElement("article");
+
+
+    element.className =
+      "message assistant";
+
+
+    element.innerHTML =
+      '<div class="message-label">Path</div>' +
+
+      '<div class="message-bubble">' +
+      formatText(answer) +
+      "</div>" +
+
+      metadataHtml +
+
+      sourceHtml;
+
+
+    messages.appendChild(element);
+
+    scrollToBottom();
+
+  }
+
+
+  /*
+   * ---------------------------------------------------------
+   * ASSESSMENT RESPONSE
+   * ---------------------------------------------------------
+   */
+
+  function addAssessmentMessage(data) {
+
+    showChat();
+
+
+    const informationNeeded =
+      Array.isArray(data.information_needed)
+        ? data.information_needed
+        : [];
+
+
+    const pathwayText =
+      data.possible_pathway &&
+      data.possible_pathway !== "unknown"
+
+        ? formatPathway(
+            data.possible_pathway
+          )
+
+        : "Further information needed";
+
+
+    let informationHtml = "";
+
+
+    if (informationNeeded.length > 0) {
+
+      informationHtml =
+        "<br><br>" +
+
+        "<strong>" +
+        "Information that may help:" +
+        "</strong>" +
+
+        "<ul>" +
+
+        informationNeeded
+          .map(
+            (item) =>
+              "<li>" +
+              escapeHtml(item) +
+              "</li>"
+          )
+          .join("") +
+
+        "</ul>";
+
+    }
+
+
+    const element =
+      document.createElement("article");
+
+
+    element.className =
+      "message assistant";
+
+
+    element.innerHTML =
+
+      '<div class="message-label">' +
+      "Path · preliminary assessment" +
+      "</div>" +
+
+      '<div class="message-bubble">' +
+
+      "<strong>" +
+      "Possible pathway:" +
+      "</strong> " +
+
+      escapeHtml(pathwayText) +
+
+      "<br><br>" +
+
+      formatText(
+        data.preliminary_guidance ||
+        "This is a preliminary navigation assessment only."
+      ) +
+
+      informationHtml +
+
+      "<br><br>" +
+
+      "<small>" +
+
+      escapeHtml(
+        data.disclaimer ||
+        "AI assists, not adjudicates."
+      ) +
+
+      "</small>" +
+
+      "</div>";
+
+
+    messages.appendChild(element);
+
+    scrollToBottom();
+
+  }
+
+
+  /*
+   * ---------------------------------------------------------
+   * ERROR
+   * ---------------------------------------------------------
+   */
+
+  function addError(message) {
+
+    const element =
+      document.createElement("article");
+
+    element.className =
+      "message assistant";
+
+    element.innerHTML =
+      '<div class="message-label">Path</div>' +
+
+      '<div class="message-bubble error-message">' +
+
+      escapeHtml(message) +
+
+      "</div>";
+
+    messages.appendChild(element);
+
+    scrollToBottom();
+
+  }
+
+
+  /*
+   * ---------------------------------------------------------
+   * HTTP
+   * ---------------------------------------------------------
+   */
+
+  async function requestJson(
+    url,
+    body
+  ) {
+
+    const response =
+      await fetch(
+        url,
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json",
+
+            "Accept":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify(body)
+        }
+      );
+
+
+    let data = {};
+
+
+    try {
+
+      data =
+        await response.json();
+
+    } catch (_) {
+
+      data = {};
+
+    }
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        data.detail ||
+        data.message ||
+        (
+          "Service error (" +
+          response.status +
+          ")."
+        )
+      );
+
+    }
+
+
+    return data;
+
+  }
+
+
+  /*
+   * ---------------------------------------------------------
+   * CHAT
+   * ---------------------------------------------------------
+   */
+
+  async function sendMessage(text) {
+
+    if (
+      !text ||
+      sending
+    ) {
+      return;
+    }
+
+
+    sending = true;
+
+    updateSendButton();
+
+
+    addUserMessage(text);
+
+
+    input.value = "";
+
+    resizeInput();
+
+
+    addTyping();
+
+
+    try {
+
+      const data =
+        await requestJson(
+          endpoints.chat,
+          {
+            message: text,
+            pathway: pathway
+          }
+        );
+
+
+      removeTyping();
+
+
+      addAssistantMessage(data);
+
+
+    } catch (error) {
+
+      removeTyping();
+
+
+      addError(
+        "I couldn't reach the ClearPath Justice service. " +
+        error.message
+      );
+
+
+    } finally {
+
+      sending = false;
+
+      updateSendButton();
+
+      input.focus();
+
+    }
+
+  }
+
+
+  /*
+   * ---------------------------------------------------------
+   * ASSESSMENT
+   * ---------------------------------------------------------
+   */
+
+  async function runAssessment(text) {
+
+    if (
+      !text ||
+      sending
+    ) {
+      return;
+    }
+
+
+    sending = true;
+
+    updateSendButton();
+
+
+    addUserMessage(text);
+
+
+    input.value = "";
+
+    resizeInput();
+
+
+    addTyping();
+
+
+    try {
+
+      const data =
+        await requestJson(
+          endpoints.assess,
+          {
+            message: text
+          }
+        );
+
+
+      removeTyping();
+
+
+      pathway =
+        data.possible_pathway ||
+        pathway;
+
+
+      addAssessmentMessage(data);
+
+
+    } catch (error) {
+
+      removeTyping();
+
+
+      addError(
+        "The preliminary assessment could not be completed. " +
+        error.message
+      );
+
+
+    } finally {
+
+      sending = false;
+
+      updateSendButton();
+
+      input.focus();
+
+    }
+
+  }
+
+
+  /*
+   * ---------------------------------------------------------
+   * NEW CHAT
+   * ---------------------------------------------------------
+   */
+
+  function newConversation() {
+
+    messages.innerHTML = "";
+
+    messages.classList.remove(
+      "active"
+    );
+
+    welcome.style.display = "";
+
+    pathway = null;
+
+    input.value = "";
+
+    resizeInput();
+
+    updateSendButton();
+
+    input.focus();
+
+  }
+
+
+  /*
+   * ---------------------------------------------------------
+   * HEALTH
+   * ---------------------------------------------------------
+   */
+
+  async function checkHealth() {
+
+    try {
+
+      const response =
+        await fetch(
+          endpoints.health,
+          {
+            method: "GET",
+            cache: "no-store"
+          }
+        );
+
+
+      if (!response.ok) {
+        throw new Error();
+      }
+
+
+      statusText.textContent =
+        "Service online";
+
+
+      statusText.parentElement
+        .classList.add("online");
+
+
+    } catch (_) {
+
+      statusText.textContent =
+        "Service unavailable";
+
+
+      statusText.parentElement
+        .classList.remove("online");
+
+    }
+
+  }
+
+
+  /*
+   * ---------------------------------------------------------
+   * STARTER BUTTONS
+   * ---------------------------------------------------------
+   */
+
+  document
+    .querySelectorAll("[data-action]")
+    .forEach(
+      (button) => {
+
+        button.addEventListener(
+          "click",
+          () => {
+
+            const action =
+              button.dataset.action;
+
+            const text =
+              prompts[action];
+
+
+            if (
+              action ===
+              "eligibility"
+            ) {
+
+              runAssessment(text);
+
+            } else {
+
+              sendMessage(text);
+
+            }
+
+          }
+        );
+
+      }
+    );
+
+
+  /*
+   * ---------------------------------------------------------
+   * FORM
+   * ---------------------------------------------------------
+   */
+
+  form.addEventListener(
+    "submit",
+    (event) => {
+
+      event.preventDefault();
+
+      sendMessage(
+        input.value.trim()
+      );
+
+    }
+  );
+
+
+  /*
+   * ---------------------------------------------------------
+   * INPUT
+   * ---------------------------------------------------------
+   */
+
+  input.addEventListener(
+    "input",
+    () => {
+
+      resizeInput();
+
+      updateSendButton();
+
+    }
+  );
+
+
+  input.addEventListener(
+    "keydown",
+    (event) => {
+
+      if (
+        event.key === "Enter" &&
+        !event.shiftKey &&
+        !event.isComposing
+      ) {
+
+        event.preventDefault();
+
+        if (!sendButton.disabled) {
+          form.requestSubmit();
+        }
+
+      }
+
+    }
+  );
+
+
+  /*
+   * ---------------------------------------------------------
+   * CONTROLS
+   * ---------------------------------------------------------
+   */
+
+  newChatButton.addEventListener(
+    "click",
+    newConversation
+  );
+
+
+  clearButton.addEventListener(
+    "click",
+    newConversation
+  );
+
+
+  infoButton.addEventListener(
+    "click",
+    () => {
+      aboutModal.hidden = false;
+    }
+  );
+
+
+  closeModal.addEventListener(
+    "click",
+    () => {
+      aboutModal.hidden = true;
+    }
+  );
+
+
+  aboutModal.addEventListener(
+    "click",
+    (event) => {
+
+      if (
+        event.target ===
+        aboutModal
+      ) {
+        aboutModal.hidden = true;
+      }
+
+    }
+  );
+
+
+  document.addEventListener(
+    "keydown",
+    (event) => {
+
+      if (
+        event.key === "Escape"
+      ) {
+        aboutModal.hidden = true;
+      }
+
+    }
+  );
+
+
+  /*
+   * ---------------------------------------------------------
+   * INIT
+   * ---------------------------------------------------------
+   */
+
+  resizeInput();
+
+  updateSendButton();
+
+  checkHealth();
+
+})();const messages = $("messages");
 
 const form = $("chatForm");
 const input = $("messageInput");
