@@ -31,7 +31,7 @@ def test_saflii_source_detection():
     assert "case_law" in result
 
 
-def test_dataset_detection_is_not_triggered_by_generic_data():
+def test_dataset_detection_is_not_triggered_by_generic_message():
     service = KnowledgeService()
 
     result = service.identify_source_categories(
@@ -58,19 +58,19 @@ def test_safeguards_are_available():
         "I want to understand expungement"
     )
 
-    names = [document["name"] for document in documents]
+    sources = [document["source"] for document in documents]
 
-    assert "ai_principles.md" in names
-    assert "uncertainty.md" in names
+    assert "knowledge/safeguards/ai_principles.md" in sources
+    assert "knowledge/safeguards/uncertainty.md" in sources
 
 
-def test_legal_framework_fallback_exists():
+def test_legal_framework_fallback_exists_for_unknown_pathway():
     service = KnowledgeService()
 
     documents = service.retrieve(
-        "Can you explain criminal record relief?"
+        "Can you explain the justice process?"
     )
 
-    names = [document["name"] for document in documents]
+    sources = [document["source"] for document in documents]
 
-    assert "criminal_record_relief.md" in names
+    assert "knowledge/legal_framework/criminal_record_relief.md" in sources
