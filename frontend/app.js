@@ -1,40 +1,836 @@
-/* =========================================================
-   ClearPath Justice — Path
-   Conversation frontend
-   ========================================================= */
-
-const conversation = document.getElementById("conversation");
-const welcome = document.getElementById("welcome");
-const messages = document.getElementById("messages");
-
-const chatForm = document.getElementById("chatForm");
-const messageInput = document.getElementById("messageInput");
-const sendButton = document.getElementById("sendButton");
-
-const backButton = document.getElementById("backButton");
-const infoButton = document.getElementById("infoButton");
-const addButton = document.getElementById("addButton");
-
-const aboutModal = document.getElementById("aboutModal");
-const closeModal = document.getElementById("closeModal");
-
-let isSending = false;
-
-
-/* ---------------------------------------------------------
-   API configuration
-   --------------------------------------------------------- */
+(() => {
+"use strict";
 
 /*
- * Because the frontend is served by the same FastAPI
- * application, using "/chat" keeps the frontend portable.
- *
- * If your deployed backend uses a different API domain,
- * change this to the full endpoint.
+
+* ClearPath Justice — Path
+* 
+* Frontend only.
+* Backend/API architecture is unchanged.
+* 
+* Endpoints:
+* GET  /health
+* POST /chat
+* POST /assess
+* 
+* The API base can optionally be supplied with:
+* 
+* window.CLEARPATH_API_BASE = "https://api.clearpathjustice.org.za";
+* 
+* If it is not supplied, relative endpoints are used.
+  */
+
+const API_BASE = (
+window.CLEARPATH_API_BASE || ""
+).replace(//$/, "");
+
+const endpoints = {
+health: "${API_BASE}/health",
+chat: "${API_BASE}/chat",
+assess: "${API_BASE}/assess"
+};
+
+const $ = (id) => document.getElementById(id);
+
+const conversation = $("conversation");
+const welcome = $("welcome");
+const messages = $("messages");
+
+const form = $("chatForm");
+const input = $("messageInput");
+const sendButton = $("sendButton");
+
+const statusText = $("statusText");
+
+const newChatButton = $("newChatButton");
+const backButton = $("backButton");
+
+const infoButton = $("infoButton");
+const aboutModal = $("aboutModal");
+const closeModal = $("closeModal");
+
+let sending = false;
+let pathway = null;
+
+/*
+
+* Suggested starter prompts.
+  */
+  const prompts = {
+  options:
+  "I want to understand what legal remedy may be available to me for my criminal record.",
+
+eligibility:
+  "I want to check whether I may be eligible for expungement.",
+
+documents:
+  "What documents do I need and what is the process for applying for expungement in South Africa?",
+
+record:
+  "I want to understand what my criminal record means and what I can do about it."
+
+};
+
+/*
+
+* Safely escape text before putting it into HTML.
+  */
+  function escapeHtml(value) {
+  return String(value ?? "").replace(
+  /[&<>"']/g,
+  (character) => ({
+  "&": "&",
+  "<": "<",
+  ">": ">",
+  '"': """,
+  "'": "'"
+  })[character]
+  );
+  }
+
+/*
+
+* Basic formatting for Path responses.
+* 
+* This intentionally remains lightweight.
+* It is not a full Markdown parser.
+  /
+  function formatText(value) {
+  return escapeHtml(value)
+  .replace(/**(.?)**/g, "<strong>$1</strong>")
+  .replace(/\n/g, "<br>");
+  }
+
+function scrollToBottom() {
+requestAnimationFrame(() => {
+conversation.scrollTop = conversation.scrollHeight;
+
+  window.scrollTo({
+    top: document.body.scrollHeight,
+    behavior: "smooth"
+  });
+});
+
+}
+
+function resizeInput() {
+input.style.height = "auto";
+
+input.style.height =
+  Math.min(input.scrollHeight, 180) + "px";
+
+}
+
+function updateSendButton() {
+sendButton.disabled =
+sending ||
+!input.value.trim();
+}
+
+function setChatMode() {
+welcome.style.display = "none";
+messages.classList.add("active");
+}
+
+/*
+
+* Add a user message.
+  */
+  function addUserMessage(text) {
+  setChatMode();
+
+const element = document.createElement("article");
+
+element.className = "message user";
+
+element.innerHTML = `
+  <div class="message-label">You</div>
+
+  <div class="message-bubble">
+    ${escapeHtml(text)}
+  </div>
+`;
+
+messages.appendChild(element);
+
+scrollToBottom();
+
+}
+
+/*
+
+* Add Path's answer.
+* 
+* Backend response:
+* 
+* {
+* answer,
+* pathway,
+* knowledge_sources,
+* uncertainty,
+* next_step
+* }
+  */
+  function addAssistantMessage(data) {
+  setChatMode();
+
+const answer =
+  data.answer ||
+  data.response ||
+  data.message ||
+  data.content ||
+  "I couldn't produce a response.";
+
+pathway =
+  data.pathway ||
+  pathway;
+
+const element = document.createElement("article");
+
+element.className = "message assistant";
+
+/*
+ * Additional response information.
  */
-const CHAT_ENDPOINT = "/chat";
+const metadata = [];
 
+if (data.pathway) {
+  metadata.push(
+    "Pathway: " +
+    formatPathway(data.pathway)
+  );
+}
 
+if (data.next_step) {
+  metadata.push(
+    "Next step: " +
+    data.next_step
+  );
+}
+
+if (data.uncertainty) {
+  metadata.push(
+    "Note: " +
+    data.uncertainty
+  );
+}
+
+/*
+ * Knowledge sources.
+ */
+const sources = Array.isArray(
+  data.knowledge_sources
+)
+  ? data.knowledge_sources.filter(Boolean)
+  : [];
+
+let sourceHtml = "";
+
+if (sources.length > 0) {
+  sourceHtml = `
+    <div class="source-card">
+      <div class="source-title">
+        Sources used
+      </div>
+
+      <ul>
+        ${sources
+          .map(
+            (source) =>
+              `<li>${escapeHtml(source)}</li>`
+          )
+          .join("")}
+      </ul>
+    </div>
+  `;
+}
+
+/*
+ * Pathway / uncertainty / next-step information.
+ */
+let metadataHtml = "";
+
+if (metadata.length > 0) {
+  metadataHtml = `
+    <div class="response-meta">
+      ${metadata
+        .map(
+          (item) =>
+            `<div>${escapeHtml(item)}</div>`
+        )
+        .join("")}
+    </div>
+  `;
+}
+
+element.innerHTML = `
+  <div class="message-label">
+    Path
+  </div>
+
+  <div class="message-bubble">
+    ${formatText(answer)}
+  </div>
+
+  ${metadataHtml}
+
+  ${sourceHtml}
+`;
+
+messages.appendChild(element);
+
+scrollToBottom();
+
+}
+
+/*
+
+* Display /assess response.
+* 
+* Backend response:
+* 
+* {
+* possible_pathway,
+* information_needed,
+* preliminary_guidance,
+* disclaimer
+* }
+  */
+  function addAssessmentMessage(data) {
+  const element = document.createElement("article");
+
+element.className =
+  "message assistant";
+
+const informationNeeded =
+  Array.isArray(data.information_needed)
+    ? data.information_needed
+    : [];
+
+const pathwayText =
+  data.possible_pathway &&
+  data.possible_pathway !== "unknown"
+    ? formatPathway(data.possible_pathway)
+    : "Further information needed";
+
+let informationHtml = "";
+
+if (informationNeeded.length > 0) {
+  informationHtml = `
+    <br>
+    <br>
+
+    <strong>
+      Information that may help:
+    </strong>
+
+    <ul>
+      ${informationNeeded
+        .map(
+          (item) =>
+            `<li>${escapeHtml(item)}</li>`
+        )
+        .join("")}
+    </ul>
+  `;
+}
+
+element.innerHTML = `
+  <div class="message-label">
+    Path · preliminary assessment
+  </div>
+
+  <div class="message-bubble">
+
+    <strong>
+      Possible pathway:
+    </strong>
+
+    ${escapeHtml(pathwayText)}
+
+    <br>
+    <br>
+
+    ${formatText(
+      data.preliminary_guidance ||
+      "This is a preliminary navigation assessment only."
+    )}
+
+    ${informationHtml}
+
+    <br>
+    <br>
+
+    <small>
+      ${escapeHtml(
+        data.disclaimer ||
+        "AI assists, not adjudicates."
+      )}
+    </small>
+
+  </div>
+`;
+
+messages.appendChild(element);
+
+scrollToBottom();
+
+}
+
+/*
+
+* Typing indicator.
+  */
+  function addTyping() {
+  const existing =
+  $("typingIndicator");
+
+if (existing) {
+  return;
+}
+
+const element =
+  document.createElement("article");
+
+element.className =
+  "message assistant";
+
+element.id =
+  "typingIndicator";
+
+element.innerHTML = `
+  <div class="message-label">
+    Path
+  </div>
+
+  <div class="message-bubble">
+
+    <div class="typing">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+
+  </div>
+`;
+
+messages.appendChild(element);
+
+scrollToBottom();
+
+}
+
+function removeTyping() {
+const indicator =
+$("typingIndicator");
+
+if (indicator) {
+  indicator.remove();
+}
+
+}
+
+/*
+
+* Error message.
+  */
+  function addError(message) {
+  const element =
+  document.createElement("article");
+
+element.className =
+  "message assistant";
+
+element.innerHTML = `
+  <div class="message-label">
+    Path
+  </div>
+
+  <div class="message-bubble error-message">
+    ${escapeHtml(message)}
+  </div>
+`;
+
+messages.appendChild(element);
+
+scrollToBottom();
+
+}
+
+/*
+
+* Make pathway names easier to read.
+  */
+  function formatPathway(value) {
+  return String(value || "")
+  .replace(/_/g, " ")
+  .replace(/\b\w/g, (character) =>
+  character.toUpperCase()
+  );
+  }
+
+/*
+
+* Generic JSON request helper.
+  */
+  async function requestJson(
+  url,
+  body
+  ) {
+  const response =
+  await fetch(url, {
+  method: "POST",
+  
+  headers: {
+  "Content-Type":
+  "application/json"
+  },
+  
+  body: JSON.stringify(body)
+  });
+
+let data = {};
+
+try {
+  data =
+    await response.json();
+} catch (_) {
+  data = {};
+}
+
+if (!response.ok) {
+  throw new Error(
+    data.detail ||
+    data.message ||
+    `The service returned an error (${response.status}).`
+  );
+}
+
+return data;
+
+}
+
+/*
+
+* Send a normal chat message.
+  */
+  async function sendMessage(text) {
+  if (!text || sending) {
+  return;
+  }
+
+sending = true;
+
+updateSendButton();
+
+addUserMessage(text);
+
+input.value = "";
+
+resizeInput();
+
+addTyping();
+
+try {
+  const data =
+    await requestJson(
+      endpoints.chat,
+      {
+        message: text,
+        pathway
+      }
+    );
+
+  removeTyping();
+
+  addAssistantMessage(data);
+
+} catch (error) {
+  removeTyping();
+
+  addError(
+    "I couldn't reach the ClearPath Justice service. " +
+    "Please try again. " +
+    error.message
+  );
+
+} finally {
+  sending = false;
+
+  updateSendButton();
+
+  input.focus();
+}
+
+}
+
+/*
+
+* Run preliminary eligibility/navigation assessment.
+  */
+  async function runAssessment(text) {
+  if (!text || sending) {
+  return;
+  }
+
+sending = true;
+
+updateSendButton();
+
+addUserMessage(text);
+
+input.value = "";
+
+resizeInput();
+
+addTyping();
+
+try {
+  const data =
+    await requestJson(
+      endpoints.assess,
+      {
+        message: text
+      }
+    );
+
+  removeTyping();
+
+  pathway =
+    data.possible_pathway ||
+    pathway;
+
+  addAssessmentMessage(data);
+
+} catch (error) {
+  removeTyping();
+
+  addError(
+    "The preliminary assessment could not be completed. " +
+    error.message
+  );
+
+} finally {
+  sending = false;
+
+  updateSendButton();
+
+  input.focus();
+}
+
+}
+
+/*
+
+* Starter action handler.
+  */
+  function handleAction(action) {
+  const text =
+  prompts[action];
+
+if (!text) {
+  return;
+}
+
+if (action === "eligibility") {
+  runAssessment(text);
+} else {
+  sendMessage(text);
+}
+
+}
+
+/*
+
+* Start a clean conversation.
+  */
+  function newConversation() {
+  messages.innerHTML = "";
+
+messages.classList.remove(
+  "active"
+);
+
+welcome.style.display = "";
+
+pathway = null;
+
+input.value = "";
+
+resizeInput();
+
+updateSendButton();
+
+input.focus();
+
+}
+
+/*
+
+* Health check.
+  */
+  async function checkHealth() {
+  try {
+  const response =
+  await fetch(
+  endpoints.health,
+  {
+  method: "GET",
+  cache: "no-store"
+  }
+  );
+  
+  if (!response.ok) {
+  throw new Error();
+  }
+  
+  statusText.textContent =
+  "Service online";
+  
+  statusText.parentElement.classList.add(
+  "online"
+  );
+
+} catch (_) {
+  statusText.textContent =
+    "Service unavailable";
+
+  statusText.parentElement.classList.remove(
+    "online"
+  );
+}
+
+}
+
+/*
+
+* Starter buttons.
+  */
+  document
+  .querySelectorAll("[data-action]")
+  .forEach((button) => {
+  button.addEventListener(
+  "click",
+  () =>
+  handleAction(
+  button.dataset.action
+  )
+  );
+  });
+
+/*
+
+* Chat form.
+  */
+  form.addEventListener(
+  "submit",
+  (event) => {
+  event.preventDefault();
+  
+  sendMessage(
+  input.value.trim()
+  );
+  }
+  );
+
+/*
+
+* Textarea resizing.
+  */
+  input.addEventListener(
+  "input",
+  () => {
+  resizeInput();
+  updateSendButton();
+  }
+  );
+
+/*
+
+* Enter sends.
+
+* Shift + Enter creates a new line.
+  */
+  input.addEventListener(
+  "keydown",
+  (event) => {
+  if (
+  event.key === "Enter" &&
+  !event.shiftKey
+  ) {
+  event.preventDefault();
+  
+  form.requestSubmit();
+  }
+  }
+  );
+
+/*
+
+* New conversation controls.
+  */
+  newChatButton.addEventListener(
+  "click",
+  newConversation
+  );
+
+backButton.addEventListener(
+"click",
+newConversation
+);
+
+/*
+
+* About modal.
+  */
+  infoButton.addEventListener(
+  "click",
+  () => {
+  aboutModal.hidden = false;
+  }
+  );
+
+closeModal.addEventListener(
+"click",
+() => {
+aboutModal.hidden = true;
+}
+);
+
+aboutModal.addEventListener(
+"click",
+(event) => {
+if (
+event.target ===
+aboutModal
+) {
+aboutModal.hidden = true;
+}
+}
+);
+
+document.addEventListener(
+"keydown",
+(event) => {
+if (
+event.key === "Escape"
+) {
+aboutModal.hidden = true;
+}
+}
+);
+
+/*
+
+* Initial state.
+  */
+  resizeInput();
+
+updateSendButton();
+
+checkHealth();
+
+})();
 /* ---------------------------------------------------------
    Utility functions
    --------------------------------------------------------- */
