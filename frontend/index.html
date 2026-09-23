@@ -1,40 +1,212 @@
-<!DOCTYPE html>
+<!doctype html>
+
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0, viewport-fit=cover"
-    >
-    <meta
-        name="description"
-        content="Path — ClearPath Justice's digital justice assistant."
-    >
-    <title>Path — ClearPath Justice</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="Path — ClearPath Justice's AI-assisted digital justice assistant.">
+  <title>Path — ClearPath Justice</title>
+  <link rel="stylesheet" href="/frontend/styles.css">
+</head><body>
+  <div class="app-shell"><header class="topbar">
+  <button
+    class="icon-button"
+    id="backButton"
+    type="button"
+    aria-label="New conversation"
+    title="New conversation"
+  >
+    ↶
+  </button>
 
-    <link rel="stylesheet" href="/frontend/styles.css">
-</head>
+  <div class="brand" aria-label="Path — ClearPath Justice">
+    <span class="brand-mark">P</span>
+    <span class="brand-name">Path</span>
+  </div>
 
-<body>
-    <div class="app-shell">
+  <button
+    class="icon-button"
+    id="infoButton"
+    type="button"
+    aria-label="About Path"
+    title="About Path"
+  >
+    ⓘ
+  </button>
+</header>
 
-        <!-- Header -->
-        <header class="topbar">
-            <button
-                class="icon-button"
-                id="backButton"
-                aria-label="Back"
-                type="button"
-            >
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M19 12H5M12 19l-7-7 7-7"/>
-                </svg>
-            </button>
+<main class="conversation" id="conversation">
 
-            <div class="brand">
-                <span class="brand-mark">P</span>
-                <span class="brand-name">Path</span>
-            </div>
+  <section class="welcome" id="welcome">
+    <div class="path-symbol" aria-hidden="true">
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+
+    <p class="eyebrow">Your ClearPath Justice assistant</p>
+
+    <h1>Hi, I'm Path.</h1>
+
+    <p class="welcome-subtitle">
+      I can help you understand and navigate criminal-record relief
+      and expungement in South Africa.
+    </p>
+
+    <div class="suggestions">
+
+      <button
+        class="suggestion"
+        type="button"
+        data-action="options"
+      >
+        <strong>Check my options</strong>
+        <small>Explore possible legal pathways</small>
+      </button>
+
+      <button
+        class="suggestion"
+        type="button"
+        data-action="eligibility"
+      >
+        <strong>Check eligibility</strong>
+        <small>Start a preliminary assessment</small>
+      </button>
+
+      <button
+        class="suggestion"
+        type="button"
+        data-action="documents"
+      >
+        <strong>Documents &amp; process</strong>
+        <small>Understand what may be required</small>
+      </button>
+
+      <button
+        class="suggestion"
+        type="button"
+        data-action="record"
+      >
+        <strong>Understand my record</strong>
+        <small>Talk through your situation</small>
+      </button>
+
+    </div>
+
+    <div class="safeguard-pill">
+      AI assists, not adjudicates.
+    </div>
+  </section>
+
+  <section
+    class="messages"
+    id="messages"
+    aria-live="polite"
+    aria-label="Conversation"
+  ></section>
+
+</main>
+
+<div class="composer-wrap">
+
+  <form class="composer" id="chatForm">
+
+    <div class="composer-top">
+      <div class="composer-context">
+        <span class="context-dot"></span>
+        <span id="statusText">Checking service…</span>
+      </div>
+    </div>
+
+    <textarea
+      id="messageInput"
+      rows="1"
+      maxlength="5000"
+      placeholder="Ask Path about expungement or criminal-record relief…"
+      autocomplete="off"
+      aria-label="Message Path"
+    ></textarea>
+
+    <div class="composer-bottom">
+
+      <button
+        class="circle-button add-button"
+        id="newChatButton"
+        type="button"
+        aria-label="New conversation"
+        title="New conversation"
+      >
+        +
+      </button>
+
+      <div class="composer-hint">
+        AI-assisted navigation
+      </div>
+
+      <button
+        class="send-button"
+        id="sendButton"
+        type="submit"
+        aria-label="Send message"
+        disabled
+      >
+        ↑
+      </button>
+
+    </div>
+
+  </form>
+
+  <p class="disclaimer">
+    Path provides information and navigation support.
+    It does not make final legal determinations or replace legal advice.
+  </p>
+
+</div>
+
+  </div>  <div
+    class="modal-backdrop"
+    id="aboutModal"
+    hidden
+  >
+    <div
+      class="modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="aboutTitle"
+    >  <button
+    class="modal-close"
+    id="closeModal"
+    type="button"
+    aria-label="Close"
+  >
+    ×
+  </button>
+
+  <div class="modal-symbol">P</div>
+
+  <h2 id="aboutTitle">About Path</h2>
+
+  <p>
+    Path is ClearPath Justice's AI-assisted digital justice assistant
+    for criminal-record relief and expungement navigation in South Africa.
+  </p>
+
+  <p>
+    Path assists with information and navigation.
+    It does not adjudicate eligibility, make legal decisions,
+    or guarantee an outcome.
+  </p>
+
+</div>
+
+  </div>  <script src="/frontend/app.js"></script></body>
+</html>            </div>
 
             <button
                 class="icon-button"
