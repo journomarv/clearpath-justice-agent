@@ -249,12 +249,40 @@ class KnowledgeService:
     def identify_pathway(self, message: str) -> str:
         text = message.lower().strip()
 
+        # Matter-specific exclusions must be checked before broad
+        # criminal-record keywords. This prevents a mention of
+        # "cannabis" from hijacking a question that explicitly says
+        # the conviction was for another offence.
+        non_cannabis_offences = [
+            "theft",
+            "fraud",
+            "assault",
+            "robbery",
+            "burglary",
+            "shoplifting",
+            "forgery",
+            "drug dealing",
+            "drug trafficking",
+        ]
+
+        if any(offence in text for offence in non_cannabis_offences):
+            if not any(
+                phrase in text
+                for phrase in [
+                    "cannabis offence",
+                    "cannabis conviction",
+                    "cannabis charge",
+                    "cannabis possession",
+                    "cannabis-related",
+                ]
+            ):
+                return "general_expungement"
+
+        # More specific pathways should be evaluated before broad
+        # application/record terminology.
         pathway_order = [
             "child_justice",
             "police_clearance",
-            "application_prep",
-            "tracking",
-            "post_decision",
             "cannabis_related_relief",
             "general_expungement",
         ]
@@ -267,6 +295,56 @@ class KnowledgeService:
                 return pathway
 
         return "unknown"
+
+    def identify_intent(self, message: str) -> str:
+        text = message.lower().strip()
+
+        if any(keyword in text for keyword in [
+            "track",
+            "tracking",
+            "status",
+            "where is my application",
+            "follow up",
+            "follow-up",
+            "how long",
+            "still waiting",
+            "submitted my application",
+            "application submitted",
+            "application received",
+            "processing",
+            "backlog",
+        ]):
+            return "tracking"
+
+        if any(keyword in text for keyword in [
+            "what documents",
+            "documents",
+            "supporting documents",
+            "what form",
+            "application form",
+            "prepare my application",
+            "how do i apply",
+            "apply",
+            "checklist",
+        ]):
+            return "application_prep"
+
+        if any(keyword in text for keyword in [
+            "approved",
+            "approval",
+            "refused",
+            "rejected",
+            "refusal",
+            "decision",
+            "after expungement",
+            "after approval",
+            "after refusal",
+            "record removed",
+            "record cleared",
+        ]):
+            return "post_decision"
+
+        return "eligibility"
 
     def identify_source_categories(self, message: str) -> list[str]:
         text = message.lower().strip()
@@ -310,8 +388,26 @@ class KnowledgeService:
         message: str,
         pathway: str | None = None,
     ) -> list[dict[str, Any]]:
+        """
+        Retrieve knowledge using two dimensions:
+
+        1. Matter/pathway:
+           - cannabis-related relief
+           - child justice
+           - police clearance
+           - general expungement
+
+        2. User intent:
+           - eligibility
+           - application preparation
+           - tracking
+           - post-decision
+
+        This prevents an intent such as "how long?" or
+        "what documents?" from replacing the underlying matter.
+        """
         detected_pathway = pathway or self.identify_pathway(message)
-        source_categories = self.identify_source_categories(message)
+        intent = self.identify_intent(message)
 
         documents: list[dict[str, Any]] = []
 
@@ -328,7 +424,7 @@ class KnowledgeService:
                 document["source_category"] = "safeguards"
                 documents.append(document)
 
-        # Load pathway knowledge.
+        # Load matter-specific knowledge.
         filename = self.PATHWAY_FILES.get(detected_pathway)
 
         if filename:
@@ -341,14 +437,28 @@ class KnowledgeService:
                 document["pathway"] = detected_pathway
                 documents.append(document)
 
-        # Load specifically requested source categories.
-        for category in source_categories:
-            document = self._load_source_category(category)
+        # Load intent-specific knowledge.
+        intent_filename = {
+            "application_prep": "application_prep.md",
+            "tracking": "tracking.md",
+            "post_decision": "post_decision.md",
+        }.get(intent)
+
+        if intent_filename:
+            intent_path = (
+                self.KNOWLEDGE_DIR
+                / "pathways"
+                / intent_filename
+            )
+
+            document = self._load_document(intent_path)
 
             if document:
+                document["source_category"] = "intent"
+                document["intent"] = intent
                 documents.append(document)
 
-        # General legal framework for unknown questions.
+        # If the matter is unknown, provide the general legal framework.
         if detected_pathway == "unknown":
             fallback = (
                 self.KNOWLEDGE_DIR
