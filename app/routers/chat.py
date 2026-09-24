@@ -15,7 +15,10 @@ router = APIRouter(tags=["chat"])
 async def chat(request: ChatRequest):
     knowledge_service = KnowledgeService()
 
-    # Determine the matter/pathway when the frontend has not supplied one.
+    question_type = knowledge_service.identify_question_type(
+        request.message
+    )
+
     pathway = request.pathway
 
     if not pathway:
@@ -23,7 +26,6 @@ async def chat(request: ChatRequest):
             request.message
         )
 
-    # Keep the underlying matter separate from the user's intent.
     intent = knowledge_service.identify_intent(
         request.message
     )
@@ -52,6 +54,7 @@ async def chat(request: ChatRequest):
             knowledge=context,
             pathway=pathway,
             intent=intent,
+            question_type=question_type,
         )
 
     except DeepSeekError as exc:
@@ -70,7 +73,14 @@ async def chat(request: ChatRequest):
         answer=result["answer"],
         pathway=result.get("pathway", pathway),
         intent=result.get("intent", intent),
-        knowledge_sources=result.get("knowledge_sources", []),
+        question_type=result.get(
+            "question_type",
+            question_type,
+        ),
+        knowledge_sources=result.get(
+            "knowledge_sources",
+            [],
+        ),
         uncertainty=result.get("uncertainty"),
         next_step=result.get("next_step"),
     )

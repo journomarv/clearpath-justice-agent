@@ -6,14 +6,25 @@ class KnowledgeService:
     """
     Path knowledge retrieval service.
 
-    Knowledge is organised into:
-    - existing user pathways
-    - source categories
-    - safeguards
-    - legal framework material
+    Path separates:
+    - personal justice navigation
+    - justice research
+    - general justice questions
 
-    Path should distinguish between law, official guidance, case law,
-    research, parliamentary material, news and datasets.
+    Within personal justice navigation, Path also separates:
+    - matter/pathway
+    - user intent
+
+    Knowledge sources include:
+    - parliamentary material
+    - case law
+    - law reform
+    - academic research
+    - datasets
+    - news
+    - local government
+    - civil society
+    - safeguards
     """
 
     BASE_DIR = Path(__file__).resolve().parents[2]
@@ -126,114 +137,106 @@ class KnowledgeService:
     }
 
     SOURCE_KEYWORDS = {
-    "parliament": [
-        "parliament",
-        "pmg",
-        "portfolio committee",
-        "select committee",
-        "committee meeting",
-        "committee report",
-        "parliamentary question",
-        "written reply",
-        "public hearing",
-        "public submission",
-        "bill",
-        "hansard",
-    ],
-
-    "case_law": [
-        "saflii",
-        "judgment",
-        "judgement",
-        "court case",
-        "court judgment",
-        "high court",
-        "supreme court",
-        "constitutional court",
-        "appeal",
-        "case law",
-    ],
-
-    "law_reform": [
-        "south african law reform commission",
-        "salrc",
-        "law reform",
-        "discussion paper",
-        "issue paper",
-        "project 151",
-        "expungement of criminal records",
-    ],
-
-    "academic": [
-        "academic research",
-        "research paper",
-        "journal article",
-        "academic article",
-        "university research",
-        "thesis",
-        "dissertation",
-        "literature review",
-        "criminology research",
-        "criminal record and employment",
-    ],
-
-    "datasets": [
-        "dataset",
-        "data set",
-        "statistics",
-        "crime statistics",
-        "saps statistics",
-        "stats sa",
-        "datafirst",
-        "arrest data",
-        "crime data",
-        "municipality data",
-        "population data",
-        "corrections data",
-        "court statistics",
-    ],
-
-    "news": [
-        "news",
-        "latest news",
-        "recent news",
-        "today",
-        "this week",
-        "latest",
-        "breaking",
-        "reported",
-        "announcement",
-        "media report",
-    ],
-
-    "local_government": [
-        "municipality",
-        "municipal",
-        "metro",
-        "local government",
-        "local municipality",
-        "ward",
-        "province",
-        "provincial government",
-        "community centre",
-        "library",
-        "local services",
-        "service point",
-    ],
-
-    "civil_society": [
-        "civil society",
-        "ngo",
-        "nonprofit",
-        "non-profit",
-        "legal aid",
-        "legal clinic",
-        "advocacy",
-        "human rights organisation",
-        "research institute",
-    ],
+        "parliament": [
+            "parliament",
+            "pmg",
+            "portfolio committee",
+            "select committee",
+            "committee meeting",
+            "committee report",
+            "parliamentary question",
+            "written reply",
+            "public hearing",
+            "public submission",
+            "bill",
+            "hansard",
+        ],
+        "case_law": [
+            "saflii",
+            "judgment",
+            "judgement",
+            "court case",
+            "court judgment",
+            "high court",
+            "supreme court",
+            "constitutional court",
+            "appeal",
+            "case law",
+        ],
+        "law_reform": [
+            "south african law reform commission",
+            "salrc",
+            "law reform",
+            "discussion paper",
+            "issue paper",
+            "project 151",
+            "expungement of criminal records",
+        ],
+        "academic": [
+            "academic research",
+            "research paper",
+            "journal article",
+            "academic article",
+            "university research",
+            "thesis",
+            "dissertation",
+            "literature review",
+            "criminology research",
+            "criminal record and employment",
+        ],
+        "datasets": [
+            "dataset",
+            "data set",
+            "statistics",
+            "crime statistics",
+            "saps statistics",
+            "stats sa",
+            "datafirst",
+            "arrest data",
+            "crime data",
+            "municipality data",
+            "population data",
+            "corrections data",
+            "court statistics",
+        ],
+        "news": [
+            "news",
+            "latest news",
+            "recent news",
+            "today",
+            "this week",
+            "latest",
+            "breaking",
+            "reported",
+            "announcement",
+            "media report",
+        ],
+        "local_government": [
+            "municipality",
+            "municipal",
+            "metro",
+            "local government",
+            "local municipality",
+            "ward",
+            "province",
+            "provincial government",
+            "community centre",
+            "library",
+            "local services",
+            "service point",
+        ],
+        "civil_society": [
+            "civil society",
+            "ngo",
+            "nonprofit",
+            "non-profit",
+            "legal aid",
+            "legal clinic",
+            "advocacy",
+            "human rights organisation",
+            "research institute",
+        ],
     }
-
 
     SOURCE_FILES = {
         "parliament": "parliament_pmg.md",
@@ -246,13 +249,70 @@ class KnowledgeService:
         "civil_society": "civil_society.md",
     }
 
+    def identify_question_type(self, message: str) -> str:
+        """
+        Separate personal justice navigation from broader justice research.
+        """
+
+        text = message.lower().strip()
+
+        personal_markers = [
+            "my record",
+            "my conviction",
+            "my application",
+            "my expungement",
+            "my criminal record",
+            "i was convicted",
+            "i have a conviction",
+            "can i expunge",
+            "can i clear my record",
+            "can i remove my record",
+            "what documents do i need",
+            "where do i apply",
+            "how do i apply",
+            "how can i apply",
+            "my police clearance",
+        ]
+
+        research_markers = [
+            "parliament",
+            "hansard",
+            "committee",
+            "bill",
+            "legislation",
+            "law reform",
+            "judgment",
+            "judgement",
+            "court case",
+            "case law",
+            "research",
+            "study",
+            "statistics",
+            "data",
+            "policy",
+            "government said",
+            "government has said",
+            "government report",
+            "how many times",
+            "how many",
+            "how often",
+            "what has parliament",
+            "what did parliament",
+            "what happened in parliament",
+            "according to parliament",
+        ]
+
+        if any(marker in text for marker in personal_markers):
+            return "personal_justice"
+
+        if any(marker in text for marker in research_markers):
+            return "justice_research"
+
+        return "general_justice"
+
     def identify_pathway(self, message: str) -> str:
         text = message.lower().strip()
 
-        # Matter-specific exclusions must be checked before broad
-        # criminal-record keywords. This prevents a mention of
-        # "cannabis" from hijacking a question that explicitly says
-        # the conviction was for another offence.
         non_cannabis_offences = [
             "theft",
             "fraud",
@@ -278,8 +338,6 @@ class KnowledgeService:
             ):
                 return "general_expungement"
 
-        # More specific pathways should be evaluated before broad
-        # application/record terminology.
         pathway_order = [
             "child_justice",
             "police_clearance",
@@ -299,51 +357,60 @@ class KnowledgeService:
     def identify_intent(self, message: str) -> str:
         text = message.lower().strip()
 
-        if any(keyword in text for keyword in [
-            "track",
-            "tracking",
-            "status",
-            "where is my application",
-            "follow up",
-            "follow-up",
-            "how long",
-            "still waiting",
-            "submitted my application",
-            "application submitted",
-            "application received",
-            "processing",
-            "backlog",
-        ]):
+        if any(
+            keyword in text
+            for keyword in [
+                "track",
+                "tracking",
+                "status",
+                "where is my application",
+                "follow up",
+                "follow-up",
+                "how long",
+                "still waiting",
+                "submitted my application",
+                "application submitted",
+                "application received",
+                "processing",
+                "backlog",
+            ]
+        ):
             return "tracking"
 
-        if any(keyword in text for keyword in [
-            "what documents",
-            "documents",
-            "supporting documents",
-            "what form",
-            "application form",
-            "prepare my application",
-            "how do i apply",
-            "how can i apply",
-            "where do i apply",
-            "application checklist",
-            "checklist",
-        ]):
+        if any(
+            keyword in text
+            for keyword in [
+                "what documents",
+                "documents",
+                "supporting documents",
+                "what form",
+                "application form",
+                "prepare my application",
+                "how do i apply",
+                "how can i apply",
+                "where do i apply",
+                "application checklist",
+                "checklist",
+            ]
+        ):
             return "application_prep"
 
-        if any(keyword in text for keyword in [
-            "approved",
-            "approval",
-            "refused",
-            "rejected",
-            "refusal",
-            "decision",
-            "after expungement",
-            "after approval",
-            "after refusal",
-            "record removed",
-            "record cleared",
-        ]):
+        if any(
+            keyword in text
+            for keyword in [
+                "approved",
+                "approval",
+                "refused",
+                "rejected",
+                "refusal",
+                "decision",
+                "after expungement",
+                "after approval",
+                "after refusal",
+                "record removed",
+                "record cleared",
+            ]
+        ):
             return "post_decision"
 
         return "eligibility"
@@ -377,7 +444,6 @@ class KnowledgeService:
             return None
 
         path = self.KNOWLEDGE_DIR / "sources" / filename
-
         document = self._load_document(path)
 
         if document:
@@ -391,29 +457,25 @@ class KnowledgeService:
         pathway: str | None = None,
     ) -> list[dict[str, Any]]:
         """
-        Retrieve knowledge using two dimensions:
+        Retrieve knowledge according to the type of question.
 
-        1. Matter/pathway:
-           - cannabis-related relief
-           - child justice
-           - police clearance
-           - general expungement
+        Personal justice:
+            matter + intent + safeguards
 
-        2. User intent:
-           - eligibility
-           - application preparation
-           - tracking
-           - post-decision
+        Justice research:
+            requested source categories + research indexes + safeguards
 
-        This prevents an intent such as "how long?" or
-        "what documents?" from replacing the underlying matter.
+        General justice:
+            relevant source categories + legal framework + safeguards
         """
+
+        question_type = self.identify_question_type(message)
+
         detected_pathway = pathway or self.identify_pathway(message)
         intent = self.identify_intent(message)
 
         documents: list[dict[str, Any]] = []
 
-        # Always load safeguards.
         common_files = [
             self.KNOWLEDGE_DIR / "safeguards" / "ai_principles.md",
             self.KNOWLEDGE_DIR / "safeguards" / "uncertainty.md",
@@ -426,11 +488,64 @@ class KnowledgeService:
                 document["source_category"] = "safeguards"
                 documents.append(document)
 
-        # Load matter-specific knowledge.
+        # Research questions get research-specific evidence first.
+        if question_type == "justice_research":
+            source_categories = self.identify_source_categories(message)
+
+            # Parliament is especially important for questions about
+            # Parliament, Hansard, Bills, committees and legislative history.
+            if (
+                "parliament" in message.lower()
+                or "hansard" in message.lower()
+                or "bill" in message.lower()
+                or "committee" in message.lower()
+            ):
+                if "parliament" not in source_categories:
+                    source_categories.insert(0, "parliament")
+
+            for category in source_categories:
+                document = self._load_source_category(category)
+
+                if document:
+                    documents.append(document)
+
+            research_index = (
+                self.KNOWLEDGE_DIR
+                / "research"
+                / "parliament_expungement_index.md"
+            )
+
+            if research_index.exists():
+                document = self._load_document(research_index)
+
+                if document:
+                    document["source_category"] = "research_index"
+                    documents.append(document)
+
+            # Give research questions the broader legal framework as context.
+            framework = (
+                self.KNOWLEDGE_DIR
+                / "legal_framework"
+                / "criminal_record_relief.md"
+            )
+
+            document = self._load_document(framework)
+
+            if document:
+                document["source_category"] = "legal_framework"
+                documents.append(document)
+
+            return documents
+
+        # Personal justice navigation.
         filename = self.PATHWAY_FILES.get(detected_pathway)
 
         if filename:
-            pathway_path = self.KNOWLEDGE_DIR / "pathways" / filename
+            pathway_path = (
+                self.KNOWLEDGE_DIR
+                / "pathways"
+                / filename
+            )
 
             document = self._load_document(pathway_path)
 
@@ -439,7 +554,6 @@ class KnowledgeService:
                 document["pathway"] = detected_pathway
                 documents.append(document)
 
-        # Load intent-specific knowledge.
         intent_filename = {
             "application_prep": "application_prep.md",
             "tracking": "tracking.md",
@@ -460,7 +574,6 @@ class KnowledgeService:
                 document["intent"] = intent
                 documents.append(document)
 
-        # If the matter is unknown, provide the general legal framework.
         if detected_pathway == "unknown":
             fallback = (
                 self.KNOWLEDGE_DIR
