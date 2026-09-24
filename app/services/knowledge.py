@@ -24,6 +24,7 @@ class KnowledgeService:
     - news
     - local government
     - civil society
+    - historical research
     - safeguards
     """
 
@@ -236,6 +237,38 @@ class KnowledgeService:
             "human rights organisation",
             "research institute",
         ],
+        "cannabis_history": [
+            "cannabis history",
+            "dagga history",
+            "history of cannabis",
+            "history of dagga",
+            "cannabis policing",
+            "dagga policing",
+            "cannabis criminalisation",
+            "cannabis criminalization",
+            "dagga criminalisation",
+            "dagga criminalization",
+            "cannabis prohibition",
+            "history of cannabis prohibition",
+            "history of cannabis criminalisation",
+            "history of cannabis criminalization",
+            "cannabis and apartheid",
+            "dagga and apartheid",
+            "cannabis and segregation",
+            "dagga and segregation",
+            "cannabis arrests",
+            "dagga arrests",
+            "cannabis prosecutions",
+            "dagga prosecutions",
+            "1952 committee",
+            "abuse of dagga",
+            "prince judgment",
+            "prince judgement",
+            "prince case",
+            "cannabis for private purposes act",
+            "private purposes act",
+            "cppa",
+        ],
     }
 
     SOURCE_FILES = {
@@ -248,6 +281,13 @@ class KnowledgeService:
         "local_government": "local_government.md",
         "civil_society": "civil_society.md",
     }
+
+    CANNABIS_HISTORY_FILES = [
+        "history/cannabis_sa/south_africa_cannabis_history.md",
+        "research/cannabis_sa/cannabis_policy_timeline.md",
+        "legal_framework/cannabis/prince_2018.md",
+        "sources/cannabis_sa/nkosi_devey_waetjen_2020.md",
+    ]
 
     def identify_question_type(self, message: str) -> str:
         """
@@ -302,10 +342,42 @@ class KnowledgeService:
             "according to parliament",
         ]
 
+        cannabis_research_markers = [
+            "cannabis history",
+            "dagga history",
+            "history of cannabis",
+            "history of dagga",
+            "cannabis policing",
+            "dagga policing",
+            "cannabis criminalisation",
+            "cannabis criminalization",
+            "dagga criminalisation",
+            "dagga criminalization",
+            "cannabis prohibition",
+            "cannabis and apartheid",
+            "dagga and apartheid",
+            "cannabis and segregation",
+            "dagga and segregation",
+            "cannabis arrests",
+            "dagga arrests",
+            "cannabis prosecutions",
+            "dagga prosecutions",
+            "1952 committee",
+            "abuse of dagga",
+            "prince judgment",
+            "prince judgement",
+            "prince case",
+            "cannabis for private purposes act",
+            "private purposes act",
+        ]
+
         if any(marker in text for marker in personal_markers):
             return "personal_justice"
 
         if any(marker in text for marker in research_markers):
+            return "justice_research"
+
+        if any(marker in text for marker in cannabis_research_markers):
             return "justice_research"
 
         return "general_justice"
@@ -451,6 +523,23 @@ class KnowledgeService:
 
         return document
 
+    def _load_cannabis_history(self) -> list[dict[str, Any]]:
+        """
+        Load the dedicated South African cannabis history collection.
+        """
+
+        documents: list[dict[str, Any]] = []
+
+        for relative_path in self.CANNABIS_HISTORY_FILES:
+            path = self.KNOWLEDGE_DIR / relative_path
+            document = self._load_document(path)
+
+            if document:
+                document["source_category"] = "cannabis_history"
+                documents.append(document)
+
+        return documents
+
     def retrieve(
         self,
         message: str,
@@ -492,23 +581,46 @@ class KnowledgeService:
         if question_type == "justice_research":
             source_categories = self.identify_source_categories(message)
 
+            text = message.lower()
+
             # Parliament is especially important for questions about
             # Parliament, Hansard, Bills, committees and legislative history.
             if (
-                "parliament" in message.lower()
-                or "hansard" in message.lower()
-                or "bill" in message.lower()
-                or "committee" in message.lower()
+                "parliament" in text
+                or "hansard" in text
+                or "bill" in text
+                or "committee" in text
             ):
                 if "parliament" not in source_categories:
                     source_categories.insert(0, "parliament")
 
+            # Load the dedicated cannabis history collection whenever
+            # the question concerns South African cannabis history,
+            # policing, criminalisation or the transition to the current law.
+            cannabis_history_markers = [
+                "cannabis",
+                "dagga",
+                "marijuana",
+                "prince",
+                "private purposes act",
+                "cppa",
+            ]
+
+            if any(marker in text for marker in cannabis_history_markers):
+                if "cannabis_history" not in source_categories:
+                    source_categories.insert(0, "cannabis_history")
+
             for category in source_categories:
+                if category == "cannabis_history":
+                    documents.extend(self._load_cannabis_history())
+                    continue
+
                 document = self._load_source_category(category)
 
                 if document:
                     documents.append(document)
 
+            # Existing parliamentary research index remains available.
             research_index = (
                 self.KNOWLEDGE_DIR
                 / "research"
