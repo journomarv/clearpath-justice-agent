@@ -24,6 +24,7 @@ class DeepSeekService:
         message: str,
         knowledge: list[dict[str, str]],
         pathway: str | None = None,
+        intent: str | None = None,
     ) -> dict[str, Any]:
 
         if not self.api_key:
@@ -62,9 +63,15 @@ You must:
 - recommend confirmation with the responsible authority or a qualified
   legal professional when information is uncertain.
 
-The user may be asking about:
+The user's detected matter/pathway is:
 
 {pathway or "an undetermined pathway"}
+
+The user's detected intent is:
+
+{intent or "eligibility"}
+
+Use matter and intent as routing signals, not as a legal conclusion.
 
 ClearPath knowledge context:
 
@@ -158,6 +165,7 @@ ClearPath knowledge context:
         return {
             "answer": answer,
             "pathway": pathway,
+            "intent": intent,
             "knowledge_sources": [
                 item.get("source", "unknown")
                 for item in knowledge

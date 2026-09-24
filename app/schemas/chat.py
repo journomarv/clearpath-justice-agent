@@ -11,6 +11,7 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     answer: str
     pathway: Optional[str] = None
+    intent: Optional[str] = None
     knowledge_sources: list[str] = []
     uncertainty: Optional[str] = None
     next_step: Optional[str] = None
