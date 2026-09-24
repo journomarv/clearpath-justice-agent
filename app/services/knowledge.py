@@ -324,7 +324,9 @@ class KnowledgeService:
             "application form",
             "prepare my application",
             "how do i apply",
-            "apply",
+            "how can i apply",
+            "where do i apply",
+            "application checklist",
             "checklist",
         ]):
             return "application_prep"
