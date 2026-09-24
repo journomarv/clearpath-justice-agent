@@ -126,9 +126,11 @@ ClearPath knowledge context:
                 "The AI service returned an error."
             ) from None
 
-        except httpx.RequestError:
+        except httpx.RequestError as exc:
             logger.warning(
-                "Unable to connect to DeepSeek."
+                "Unable to connect to DeepSeek: %s: %s",
+                type(exc).__name__,
+                str(exc),
             )
             raise DeepSeekError(
                 "The AI service could not be reached."
