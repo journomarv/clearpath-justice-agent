@@ -347,23 +347,49 @@ class KnowledgeService:
             "dagga history",
             "history of cannabis",
             "history of dagga",
+
+            # Historical criminalisation questions
+            "how was cannabis criminalised",
+            "how was cannabis criminalized",
+            "why was cannabis criminalised",
+            "why was cannabis criminalized",
+            "when was cannabis criminalised",
+            "when was cannabis criminalized",
+
+            # Policing and prohibition
             "cannabis policing",
             "dagga policing",
             "cannabis criminalisation",
             "cannabis criminalization",
             "dagga criminalisation",
             "dagga criminalization",
+            "criminalisation of cannabis",
+            "criminalization of cannabis",
+            "criminalisation of dagga",
+            "criminalization of dagga",
             "cannabis prohibition",
+            "history of cannabis prohibition",
+            "history of cannabis criminalisation",
+            "history of cannabis criminalization",
+
+            # Apartheid, segregation and race
             "cannabis and apartheid",
+            "apartheid and cannabis",
             "dagga and apartheid",
             "cannabis and segregation",
             "dagga and segregation",
+            "racialisation of cannabis",
+            "racialization of cannabis",
+
+            # Historical enforcement
             "cannabis arrests",
             "dagga arrests",
             "cannabis prosecutions",
             "dagga prosecutions",
             "1952 committee",
             "abuse of dagga",
+
+            # Constitutional/legal history
             "prince judgment",
             "prince judgement",
             "prince case",
