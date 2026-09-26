@@ -33,7 +33,7 @@ TODO(legal-verification, ClearPath legal team):
 ================================================================================
 """
 from app.rules.registry import register
-from app.schemas.rules import (
+from app.schemas.rules import ReliefType (
     EligibilityAssessment,
     EligibilityStatus,
     ReliefType,
