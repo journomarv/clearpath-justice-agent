@@ -6,8 +6,9 @@ hard-coded. This module is read once (via lru_cache) and the resulting
 Settings singleton is used everywhere else in the app.
 """
 from functools import lru_cache
-from typing import List
+from typing import Any, List
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -38,11 +39,27 @@ class Settings(BaseSettings):
     # --- Privacy ---
     pii_guard_enabled: bool = True
 
+    @field_validator("port", mode="before")
+    @classmethod
+    def empty_port_uses_default(cls, value: Any) -> Any:
+        """Treat an empty deployment env var as unset."""
+        return 8000 if value == "" else value
+
+    @field_validator("pii_guard_enabled", mode="before")
+    @classmethod
+    def empty_pii_guard_uses_default(cls, value: Any) -> Any:
+        """Treat an empty deployment env var as unset."""
+        return True if value == "" else value
+
     @property
     def cors_origin_list(self) -> List[str]:
         if self.cors_origins.strip() == "*":
             return ["*"]
-        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+        return [
+            origin.strip()
+            for origin in self.cors_origins.split(",")
+            if origin.strip()
+        ]
 
     @property
     def is_production(self) -> bool:
@@ -51,7 +68,9 @@ class Settings(BaseSettings):
     @property
     def deepseek_configured(self) -> bool:
         """True only if a non-placeholder API key is present."""
-        return bool(self.deepseek_api_key) and self.deepseek_api_key != "your_api_key_here"
+        return bool(self.deepseek_api_key) and (
+            self.deepseek_api_key != "your_api_key_here"
+        )
 
     def __repr__(self) -> str:  # pragma: no cover - defensive redaction
         # Never let the API key leak through logs, debuggers, or repr().
