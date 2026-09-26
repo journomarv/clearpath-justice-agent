@@ -1,17 +1,13 @@
-from fastapi.testclient import TestClient
-
-from app.main import app
-
-
-client = TestClient(app)
-
-
-def test_health_endpoint():
+def test_health_check(client):
     response = client.get("/health")
-
     assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "ok"
+    assert body["service"] == "clearpath-justice-agent"
+    assert "checks" in body
+    assert set(body["checks"].keys()) == {"api", "configuration", "deepseek_available"}
 
-    data = response.json()
 
-    assert data["status"] == "ok"
-    assert data["service"] == "ClearPath Justice Agent"
+def test_health_never_exposes_api_key(client):
+    response = client.get("/health")
+    assert "test-key-not-real" not in response.text

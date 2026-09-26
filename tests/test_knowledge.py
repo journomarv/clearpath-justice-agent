@@ -1,76 +1,33 @@
-from app.services.knowledge import KnowledgeService
+"""Tests for the knowledge base structure and source registry."""
+from app.knowledge import KNOWLEDGE_STRUCTURE, list_knowledge_for_relief_type
+from app.knowledge.sources import SOURCE_REGISTRY, list_unverified_sources
+from app.schemas.rules import ReliefType
 
 
-def test_general_expungement_pathway():
-    service = KnowledgeService()
-
-    result = service.identify_pathway(
-        "I want to understand expungement of my criminal record"
-    )
-
-    assert result == "general_expungement"
+def test_every_knowledge_item_cites_at_least_one_source():
+    for item in KNOWLEDGE_STRUCTURE.values():
+        assert item["source_ids"], f"{item['id']} has no source_ids"
 
 
-def test_parliament_source_detection():
-    service = KnowledgeService()
-
-    result = service.identify_source_categories(
-        "What has Parliament said about expungement?"
-    )
-
-    assert "parliament" in result
+def test_every_cited_source_id_exists_in_registry():
+    for item in KNOWLEDGE_STRUCTURE.values():
+        for source_id in item["source_ids"]:
+            assert source_id in SOURCE_REGISTRY, f"missing source: {source_id}"
 
 
-def test_saflii_source_detection():
-    service = KnowledgeService()
-
-    result = service.identify_source_categories(
-        "Are there SAFLII judgments about criminal record expungement?"
-    )
-
-    assert "case_law" in result
+def test_cannabis_relief_type_has_knowledge_items():
+    items = list_knowledge_for_relief_type(ReliefType.CANNABIS_EXPUNGEMENT)
+    assert len(items) > 0
 
 
-def test_dataset_detection_is_not_triggered_by_generic_message():
-    service = KnowledgeService()
-
-    result = service.identify_source_categories(
-        "I have a criminal record and need help"
-    )
-
-    assert "datasets" not in result
+def test_general_relief_type_has_knowledge_items():
+    items = list_knowledge_for_relief_type(ReliefType.CRIMINAL_RECORD_EXPUNGEMENT)
+    assert len(items) > 0
 
 
-def test_research_detection():
-    service = KnowledgeService()
-
-    result = service.identify_source_categories(
-        "Are there academic research papers about criminal records and employment?"
-    )
-
-    assert "academic" in result
-
-
-def test_safeguards_are_available():
-    service = KnowledgeService()
-
-    documents = service.retrieve(
-        "I want to understand expungement"
-    )
-
-    sources = [document["source"] for document in documents]
-
-    assert "knowledge/safeguards/ai_principles.md" in sources
-    assert "knowledge/safeguards/uncertainty.md" in sources
-
-
-def test_legal_framework_fallback_exists_for_unknown_pathway():
-    service = KnowledgeService()
-
-    documents = service.retrieve(
-        "Can you explain the justice process?"
-    )
-
-    sources = [document["source"] for document in documents]
-
-    assert "knowledge/legal_framework/criminal_record_relief.md" in sources
+def test_no_source_is_falsely_marked_verified_for_automation_yet():
+    # v0.2 ships with zero sources cleared for automated eligibility logic.
+    # This test should be updated (not deleted) once ClearPath legal signs
+    # off on a specific source -- see app/knowledge/README.md.
+    unverified = list_unverified_sources()
+    assert len(unverified) == len(SOURCE_REGISTRY)

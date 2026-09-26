@@ -1,1 +1,1 @@
-"""Pydantic schemas for the ClearPath Justice Agent."""
+"""ClearPath API schemas."""
