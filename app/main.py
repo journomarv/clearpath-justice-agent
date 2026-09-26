@@ -26,7 +26,12 @@ app = FastAPI(
     version="0.2.1",
 )
 
+app.mount("/static", StaticFiles(directory="frontend"), name="static")
 
+@app.get("/")
+async def read_index():
+    return FileResponse('frontend/index.html')
+    
 app.add_middleware(
     CORSMiddleware,
     allow_origins=get_cors_origins(),
