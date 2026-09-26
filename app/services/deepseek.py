@@ -29,8 +29,13 @@ class DeepSeekService:
     ) -> dict[str, Any]:
 
         if not self.api_key:
+            logger.error(
+                "DeepSeek API key is missing. "
+                "Check DEEPSEEK_API_KEY in the Vercel Production environment."
+            )
             raise DeepSeekError(
-                "The AI service is not configured."
+                "The AI service is not configured. "
+                "Please check the production AI configuration."
             )
 
         knowledge_context = "\n\n".join(
