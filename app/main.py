@@ -35,7 +35,15 @@ async def read_index():
 app.add_middleware(
     CORSMiddleware,
     allow_origins=get_cors_origins(),
-    allow_credentials=False,
+    python - <<'PY'
+from pathlib import Path
+
+p = Path("app/main.py")
+s = p.read_text()
+s = s.replace("    allow_credentials=True,", "    allow_credentials=False,")
+p.write_text(s)
+PY
+
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],
 )
