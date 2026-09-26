@@ -8,6 +8,9 @@ from fastapi.staticfiles import StaticFiles
 from app.config import get_cors_origins
 from app.routers import assess, chat, health
 
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 FRONTEND_DIR = BASE_DIR / "frontend"
