@@ -1,37 +1,279 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0B2D47">
-  <meta name="description" content="ClearPath Justice helps people understand, navigate and move forward through justice pathways.">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0B2239">
+  <meta name="description" content="ClearPath Justice — helping people understand and navigate justice pathways.">
+  <title>ClearPath Justice</title>
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="stylesheet" href="/styles.css">
-  <title>ClearPath Justice</title>
 </head>
+
 <body>
-  <div id="app">
-    <header class="app-header">
+  <div class="site-shell">
+
+    <header class="site-header">
       <a class="brand" href="#home" aria-label="ClearPath Justice home">
-        <span class="brand-mark">C</span>
-        <span>
+        <span class="brand-mark">
+          <img src="assets/clearpath-logo.jpeg" alt="ClearPath Justice" />
+        </span>
+        <span class="brand-copy">
           <strong>ClearPath</strong>
           <small>JUSTICE</small>
         </span>
       </a>
-      <button id="installBtn" class="install-button" hidden>Install</button>
+
+      <nav class="desktop-nav" aria-label="Primary navigation">
+        <a href="#home">Home</a>
+        <a href="#path">Path</a>
+        <a href="#journey">Journey</a>
+        <a href="#more">More</a>
+      </nav>
+
+      <a class="header-action" href="#path">
+        <span>Talk to Path</span>
+        <span aria-hidden="true">↗</span>
+      </a>
     </header>
 
-    <main id="main" class="app-view"></main>
+    <main>
 
-    <nav class="app-navigation" aria-label="Primary navigation">
-      <a href="#home" data-route="home">Home</a>
-      <a href="#path" data-route="path">Path</a>
-      <a href="#journey" data-route="journey">Journey</a>
-      <a href="#more" data-route="more">More</a>
-    </nav>
+      <section class="hero" id="home">
+        <div class="hero-inner">
+
+          <div class="hero-copy">
+            <div class="eyebrow">
+              <span class="eyebrow-line"></span>
+              CLEARPATH JUSTICE
+            </div>
+
+            <h1>
+              A clearer way<br>
+              through <em>justice.</em>
+            </h1>
+
+            <p class="hero-lead">
+              Tell Path what happened. Get help understanding your
+              possible pathway, what information matters, and what
+              you can do next.
+            </p>
+
+            <div class="hero-actions">
+              <a class="primary-button" href="#path">
+                <span>Talk to Path</span>
+                <span class="button-arrow">→</span>
+              </a>
+
+              <a class="text-button" href="#journey">
+                Explore how it works
+                <span>↓</span>
+              </a>
+            </div>
+
+            <div class="trust-note">
+              <span class="trust-dot"></span>
+              AI assists. It does not adjudicate.
+            </div>
+          </div>
+
+          <div class="hero-visual" aria-label="Path conversational assistant preview">
+
+            <div class="path-orbit orbit-one"></div>
+            <div class="path-orbit orbit-two"></div>
+
+            <div class="path-card">
+              <div class="path-card-top">
+                <div class="path-identity">
+                  <span class="path-mark">
+                    <img src="assets/path-logo.png" alt="Path" />
+                  </span>
+                  <div>
+                    <strong>Path</strong>
+                    <small>ClearPath's justice guide</small>
+                  </div>
+                </div>
+
+                <span class="online">
+                  <i></i> Ready
+                </span>
+              </div>
+
+              <div class="conversation-preview">
+                <div class="preview-label">PATH</div>
+
+                <p class="path-question">
+                  What would you like help understanding?
+                </p>
+
+                <div class="preview-option">
+                  <span>01</span>
+                  <div>
+                    <strong>Understand my situation</strong>
+                    <small>Tell me what happened</small>
+                  </div>
+                  <span class="option-arrow">→</span>
+                </div>
+
+                <div class="preview-option">
+                  <span>02</span>
+                  <div>
+                    <strong>Explore my options</strong>
+                    <small>Understand possible pathways</small>
+                  </div>
+                  <span class="option-arrow">→</span>
+                </div>
+
+                <div class="preview-option">
+                  <span>03</span>
+                  <div>
+                    <strong>Find my next step</strong>
+                    <small>Work through the process</small>
+                  </div>
+                  <span class="option-arrow">→</span>
+                </div>
+              </div>
+
+              <div class="path-input-preview">
+                <span>Tell Path what happened...</span>
+                <b>↑</b>
+              </div>
+            </div>
+
+            <div class="floating-label label-one">
+              <span>01</span>
+              Understand
+            </div>
+
+            <div class="floating-label label-two">
+              <span>02</span>
+              Navigate
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <section class="principles" id="journey">
+        <div class="section-inner">
+
+          <div class="section-intro">
+            <div class="eyebrow">
+              <span class="eyebrow-line"></span>
+              THE CLEARPATH APPROACH
+            </div>
+            <h2>Justice should be<br><em>navigable.</em></h2>
+          </div>
+
+          <div class="principle-grid">
+
+            <article class="principle">
+              <span class="principle-number">01</span>
+              <h3>Understand</h3>
+              <p>
+                Make sense of the process, requirements and information
+                relevant to your situation.
+              </p>
+            </article>
+
+            <article class="principle">
+              <span class="principle-number">02</span>
+              <h3>Prepare</h3>
+              <p>
+                Work through the information and documents you may need
+                before taking the next step.
+              </p>
+            </article>
+
+            <article class="principle">
+              <span class="principle-number">03</span>
+              <h3>Move forward</h3>
+              <p>
+                Track your journey and connect with appropriate human
+                support when it is needed.
+              </p>
+            </article>
+
+          </div>
+        </div>
+      </section>
+
+      <section class="path-section" id="path">
+        <div class="path-section-inner">
+
+          <div class="path-section-copy">
+            <div class="eyebrow">
+              <span class="eyebrow-line"></span>
+              MEET PATH
+            </div>
+
+            <h2>Start with<br><em>a conversation.</em></h2>
+
+            <p>
+              You don't need to know the legal terminology or where to
+              begin. Start with your story. Path helps turn that starting
+              point into a clearer next step.
+            </p>
+
+            <a class="primary-button" href="#path">
+              <span>Start with Path</span>
+              <span class="button-arrow">→</span>
+            </a>
+          </div>
+
+          <div class="path-statement">
+            <span class="large-path-mark">
+              <img src="assets/path-logo.png" alt="Path" />
+            </span>
+
+            <blockquote>
+              “A legal right does not automatically become
+              a practical right.”
+            </blockquote>
+
+            <div class="statement-rule"></div>
+
+            <span class="statement-caption">
+              CLEARPATH JUSTICE
+            </span>
+          </div>
+
+        </div>
+      </section>
+
+      <section class="closing" id="more">
+        <div class="closing-inner">
+          <div>
+            <div class="eyebrow">
+              <span class="eyebrow-line"></span>
+              CLEARPATH JUSTICE
+            </div>
+            <h2>Know where<br>to go <em>next.</em></h2>
+          </div>
+
+          <a class="outline-button" href="#path">
+            Talk to Path <span>→</span>
+          </a>
+        </div>
+      </section>
+
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-brand">
+        <span class="brand-mark small">
+          <img src="assets/clearpath-logo.jpeg" alt="ClearPath Justice" />
+        </span>
+        <span><strong>ClearPath</strong> Justice</span>
+      </div>
+
+      <p>Technology for navigating legal remedies.</p>
+
+      <span>© ClearPath Justice</span>
+    </footer>
+
   </div>
 
-  <script src="/app.js" defer></script>
+  <script src="/app.js"></script>
 </body>
 </html>
