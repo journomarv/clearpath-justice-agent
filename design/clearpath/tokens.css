@@ -1,0 +1,66 @@
+:root {
+  --cp-color-navy: #0B2239;
+  --cp-color-navy-light: #16324F;
+
+  --cp-color-green: #2E6B44;
+  --cp-color-green-light: #E8F0EB;
+
+  --cp-color-gold: #D4A537;
+
+  --cp-bg: #F7F9F9;
+  --cp-surface: #FFFFFF;
+
+  --cp-text: #1A1A1A;
+  --cp-text-muted: #5C6875;
+  --cp-border: #E2E8F0;
+
+  --cp-primary: var(--cp-color-green);
+  --cp-primary-on: #FFFFFF;
+
+  --cp-accent: var(--cp-color-gold);
+  --cp-heading: var(--cp-color-navy);
+
+  --cp-font-display:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+
+  --cp-font-body:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+
+  --cp-space-1: 4px;
+  --cp-space-2: 8px;
+  --cp-space-3: 12px;
+  --cp-space-4: 16px;
+  --cp-space-5: 20px;
+  --cp-space-6: 24px;
+  --cp-space-8: 32px;
+  --cp-space-10: 40px;
+  --cp-space-12: 48px;
+  --cp-space-16: 64px;
+
+  --cp-radius-sm: 8px;
+  --cp-radius-md: 12px;
+  --cp-radius-lg: 16px;
+  --cp-radius-pill: 999px;
+
+  --cp-ease-standard: cubic-bezier(0.23, 1, 0.32, 1);
+
+  --cp-motion-enter: 200ms;
+  --cp-motion-exit: 140ms;
+
+  --cp-focus-ring:
+    0 0 0 3px rgba(46, 107, 68, 0.24);
+}

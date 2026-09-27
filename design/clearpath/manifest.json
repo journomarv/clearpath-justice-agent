@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "od-design-system-project/v1",
+  "id": "clearpath",
+  "name": "ClearPath Justice",
+  "category": "Digital Justice",
+  "description": "Calm, civic-professional design system for ClearPath Justice and its Path conversational assistant.",
+  "source": {
+    "type": "local",
+    "origin": "ClearPath Justice repository"
+  },
+  "files": {
+    "design": "DESIGN.md",
+    "tokens": "tokens.css"
+  }
+}
