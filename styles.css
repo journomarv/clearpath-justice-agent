@@ -1,0 +1,245 @@
+:root {
+  --navy: #0B2D47;
+  --cream: #F7F7F0;
+  --white: #FFFFFF;
+  --text: #17232D;
+  --muted: #66737D;
+  --line: #DCE2E5;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: var(--cream);
+  color: var(--text);
+}
+
+body {
+  min-height: 100vh;
+}
+
+button,
+textarea {
+  font: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 68px;
+  padding: 12px 20px;
+  background: var(--navy);
+  color: var(--white);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 2px solid var(--white);
+  border-radius: 10px;
+  font-weight: 800;
+}
+
+.brand strong {
+  display: block;
+  font-size: 17px;
+}
+
+.brand small {
+  display: block;
+  font-size: 9px;
+  letter-spacing: 2px;
+  opacity: .75;
+}
+
+.install-button {
+  border: 1px solid rgba(255,255,255,.3);
+  border-radius: 999px;
+  padding: 8px 14px;
+  background: transparent;
+  color: var(--white);
+}
+
+.app-view {
+  width: min(760px, 100%);
+  min-height: calc(100vh - 132px);
+  margin: 0 auto;
+  padding: 28px 20px 100px;
+}
+
+.hero {
+  padding: 30px 0;
+}
+
+.eyebrow {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 0;
+  color: var(--navy);
+  font-size: clamp(36px, 9vw, 64px);
+  line-height: .98;
+  letter-spacing: -2px;
+}
+
+h2 {
+  margin: 0 0 12px;
+  color: var(--navy);
+}
+
+p {
+  line-height: 1.65;
+}
+
+.hero p {
+  max-width: 580px;
+  color: var(--muted);
+  font-size: 17px;
+}
+
+.primary-button {
+  display: inline-flex;
+  margin-top: 20px;
+  padding: 13px 22px;
+  border-radius: 999px;
+  background: var(--navy);
+  color: var(--white);
+  font-weight: 700;
+}
+
+.card,
+.list-item {
+  margin-top: 16px;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--white);
+}
+
+.card p,
+.list-item span {
+  color: var(--muted);
+}
+
+.list {
+  display: grid;
+  gap: 12px;
+}
+
+.list-item strong {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--navy);
+}
+
+.chat {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.message {
+  max-width: 88%;
+  padding: 15px 17px;
+  border-radius: 18px;
+  line-height: 1.55;
+}
+
+.message.assistant {
+  align-self: flex-start;
+  border: 1px solid var(--line);
+  background: var(--white);
+}
+
+.message.user {
+  align-self: flex-end;
+  background: var(--navy);
+  color: var(--white);
+}
+
+.chat-form {
+  display: flex;
+  gap: 8px;
+  margin-top: 20px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--white);
+}
+
+.chat-form textarea {
+  flex: 1;
+  min-height: 44px;
+  resize: vertical;
+  border: 0;
+  outline: 0;
+  padding: 10px;
+}
+
+.send-button {
+  align-self: flex-end;
+  border: 0;
+  border-radius: 12px;
+  padding: 11px 16px;
+  background: var(--navy);
+  color: var(--white);
+}
+
+.app-navigation {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 30;
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--line);
+  background: rgba(255,255,255,.97);
+}
+
+.app-navigation a {
+  min-width: 70px;
+  padding: 9px 10px;
+  border-radius: 12px;
+  color: var(--muted);
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.app-navigation a.active {
+  background: var(--navy);
+  color: var(--white);
+}
