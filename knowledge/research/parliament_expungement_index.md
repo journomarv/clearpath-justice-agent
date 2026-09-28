@@ -1,141 +1,264 @@
-# Parliament Expungement Evidence Index
+# Parliamentary Expungement Research Index
 
-## Purpose
+## Scope
 
-This is a curated evidence index for parliamentary material concerning
-criminal-record expungement, criminal-record removal, rehabilitation,
-reintegration and related legislative reform in South Africa.
+This is a curated evidence index for parliamentary and
+legislative-monitoring questions about criminal-record
+expungement and related relief in South Africa.
 
-This index is not an exhaustive parliamentary corpus.
+It is not an exhaustive count of every parliamentary
+reference unless the underlying parliamentary corpus has
+been systematically searched and deduplicated.
 
-Path must never present the number of records in this file as the total
-number of times Parliament has dealt with expungement.
-
-Where an exhaustive count has not been established, Path should use
-language such as:
+Path must therefore use language such as:
 
 - "I found at least..."
-- "The records currently indexed show..."
-- "This is not an exhaustive count."
+- "In the records currently indexed..."
+- "This curated index contains..."
+- "I cannot establish an exhaustive parliamentary count from
+  this corpus alone."
 
-## Parliamentary records currently indexed
+Do not present the number of indexed records as the total
+number of times Parliament has dealt with the subject.
+
+---
+
+## Verified parliamentary examples
 
 ### 11 September 2018 — National Assembly Hansard
 
-Topic:
-Section 271B and expungement / criminal-record clearing.
+The Hansard discusses section 271B of the Criminal Procedure
+Act and the administrative clearing of criminal records,
+describing this generally as expungement.
 
 Source:
-South African Parliament — National Assembly Hansard.
+
+Parliament of South Africa, National Assembly Hansard,
+11 September 2018.
+
+https://www.parliament.gov.za/storage/app/media/Docs/hansard/a0c0bd4b-406e-4d9d-8919-96137c319ce1.pdf
+
+---
 
 ### 14 November 2018 — National Assembly Hansard
 
-Topic:
-Expungement and presidential pardon.
+The Hansard discusses removal of criminal records through
+expungement or presidential pardon and the government's
+approach to criminal-record relief.
 
 Source:
-South African Parliament — National Assembly Hansard.
+
+Parliament of South Africa, National Assembly Hansard,
+14 November 2018.
+
+https://www.parliament.gov.za/storage/app/media/Docs/hansard/5c3b4cf6-e8e5-4960-a78b-b2046924c52d.pdf
+
+---
 
 ### 9 June 2022 — National Council of Provinces Hansard
 
-Topic:
-Expungement process, South African Law Reform Commission work
-and employment barriers associated with criminal records.
+The debate discusses the development of the expungement
+process, the role of the Law Reform Commission and
+employment barriers associated with criminal records.
 
 Source:
-South African Parliament — NCOP Hansard.
+
+Parliament of South Africa, NCOP Hansard,
+9 June 2022.
+
+https://www.parliament.gov.za/storage/app/media/Docs/hansard/66566c2a-4492-458a-8a4f-9950c7c49513.pdf
+
+---
 
 ### 30 May 2023 — National Assembly Hansard
 
-Topic:
-Expungement of certain offences in the context of Judicial Matters
+The Hansard refers to expungement of certain offences and
+admission-of-guilt records in the context of Judicial Matters
 legislation.
 
 Source:
-South African Parliament — National Assembly Hansard.
 
-### 6 December 2023 — National Council of Provinces Hansard
+Parliament of South Africa, National Assembly Hansard,
+30 May 2023.
 
-Topic:
-Judicial Matters Amendment Bill, admission of guilt and expungement.
+https://www.parliament.gov.za/storage/app/media/Docs/hansard/697c6148-cb82-48ac-9c88-6e912b4740d5.pdf
+
+---
+
+### 6 December 2023 — NCOP Hansard
+
+The Select Committee discussion of the Judicial Matters
+Amendment Bill refers to amendments concerning admission of
+guilt and expungement of criminal records.
 
 Source:
-South African Parliament — NCOP Hansard.
+
+Parliament of South Africa, NCOP Hansard,
+6 December 2023.
+
+https://www.parliament.gov.za/storage/app/media/Docs/hansard/8fd760b8-d42e-4605-b097-ca7355da3fda.pdf
+
+---
 
 ### 17 July 2024 — National Assembly Hansard
 
-Topic:
-Expungement certificates, online systems and automatic expungement.
+The Minister reported on expungement certificates and an
+online expungement application system, and referred to
+amendments providing for automatic expungement in specified
+circumstances.
 
 Source:
-South African Parliament — National Assembly Hansard.
+
+Parliament of South Africa, National Assembly Hansard,
+17 July 2024.
+
+https://www.parliament.gov.za/storage/app/media/Docs/hansard/7b69fbff-b569-42da-a046-45466dbba46e.pdf
+
+---
+
+## Cannabis-related parliamentary records
 
 ### 2020 — Cannabis for Private Purposes Bill
 
-Topic:
-Provisions concerning expungement of certain cannabis-related
-criminal records.
+Parliament's Portfolio Committee on Justice and Constitutional
+Services called for submissions on the Cannabis for Private
+Purposes Bill, which included provisions for expungement of
+criminal records for specified cannabis offences.
 
 Source:
-South African Parliament / Parliamentary Monitoring Group.
+
+Parliament committee notice.
+
+https://www.parliament.gov.za/committee-notice-details/177
+
+---
 
 ### 2023 — Cannabis for Private Purposes Bill
 
-Topic:
-Legislative provisions concerning expungement of qualifying
-cannabis-related criminal records.
+The Select Committee on Security and Justice again called for
+submissions on the Cannabis for Private Purposes Bill,
+including provisions concerning expungement of criminal
+records.
 
 Source:
-South African Parliament / Parliamentary Monitoring Group.
 
-## Counting methodology
+Parliament media statement,
+30 November 2023.
 
-A future exhaustive count must define what "dealt with" means.
+https://www.parliament.gov.za/press-releases/media-statement-select-committee-security-and-justice-calls-comments-cannabis-bill
 
-Possible counting units include:
+---
 
-1. Hansard debates or questions mentioning expungement.
-2. Parliamentary committee meetings discussing expungement.
-3. Bills containing expungement provisions.
-4. Written parliamentary questions and replies.
-5. Committee reports or submissions.
-6. Parliamentary media statements.
+## Counting rules
 
-These categories must not automatically be added together because the
-same legislative matter can appear in multiple parliamentary records.
+A parliamentary reference can be:
 
-Before reporting an exhaustive number, Path should search the defined
-parliamentary corpus, identify relevant records, remove duplicates and
-state the counting unit.
+- a parliamentary question;
+- a ministerial answer;
+- a committee briefing;
+- a Bill;
+- a public submission process;
+- a committee report;
+- a Hansard debate;
+- implementation oversight.
 
-## Legal interpretation safeguard
+These must not be counted as though they are all the same
+type of event.
 
-Parliamentary discussion is not automatically a change in law.
+When the user asks:
+
+"How many times has Parliament dealt with expungements?"
+
+Path should explain whether it is counting:
+
+1. unique parliamentary documents;
+2. unique parliamentary proceedings;
+3. distinct legislative initiatives;
+4. individual references or mentions; or
+5. a broader set of oversight events.
+
+Path should not give an exhaustive total unless the
+searchable parliamentary corpus has actually been
+systematically searched and deduplicated.
+
+---
+
+## Research answer standard
+
+For parliamentary research questions, Path should provide:
+
+- the answer supported by the indexed evidence;
+- the relevant dates;
+- the type of parliamentary record;
+- what the record actually concerns;
+- the source;
+- the scope limitation.
+
+If the available evidence contains six distinct verified
+records, Path may say:
+
+"In the parliamentary records currently indexed, I found at
+least six distinct records directly discussing expungement
+or closely related criminal-record relief."
+
+Path must not say:
+
+"Parliament has dealt with expungement exactly six times."
+
+The latter would incorrectly treat the curated index as an
+exhaustive parliamentary database.
+
+---
+
+## Legal-status distinction
+
+Parliamentary discussion does not automatically change the law.
 
 Path must distinguish between:
 
-- proposed
-- introduced
-- passed
-- assented to
-- commenced
-- current law
+- proposed;
+- introduced;
+- passed;
+- assented to;
+- commenced;
+- current law.
 
-A parliamentary reference should therefore not be presented as evidence
-that the applicable law has changed unless the relevant authoritative
-legal source confirms that change.
+A parliamentary debate, committee discussion or Bill must not
+be described as the current legal position unless the supplied
+evidence establishes that status.
 
-## Source hierarchy
+---
 
-For parliamentary research, prefer:
+## Future corpus expansion
 
-1. Official Parliament records
-2. Parliamentary Monitoring Group records
-3. Government legislation and official notices
-4. South African Law Reform Commission material
-5. Court judgments
-6. Academic research
-7. Reputable secondary reporting
+This index should eventually be replaced or supplemented by a
+systematically searchable parliamentary corpus containing:
 
-Secondary sources should not replace the primary parliamentary record
-where the primary record is available.
+- Hansard;
+- parliamentary questions;
+- written replies;
+- committee agendas;
+- committee minutes;
+- committee reports;
+- Bills;
+- amendments;
+- public submissions;
+- media statements;
+- implementation oversight.
+
+The future research system should record:
+
+- document ID;
+- date;
+- parliamentary chamber;
+- committee;
+- document type;
+- title;
+- relevant passage;
+- source URL;
+- subject tags;
+- legislation mentioned;
+- duplicate/cross-reference status.
+
+Only after systematic indexing and deduplication should Path
+attempt to produce an exhaustive parliamentary count.
