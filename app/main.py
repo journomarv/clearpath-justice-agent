@@ -41,6 +41,12 @@ app.add_middleware(
 )
 
 
+@app.get("/")
+async def root() -> dict:
+    """Return a simple API landing response."""
+    return {"message": "ClearPath Justice Agent — API online"}
+
+
 @app.get("/health", response_model=HealthResponse)
 async def health() -> HealthResponse:
     current_settings = get_settings()
