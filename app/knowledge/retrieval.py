@@ -20,8 +20,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List
 
+from app.knowledge import list_sources_for_relief_type
 from app.knowledge.routing import Route
 from app.knowledge.sources import get_source
+from app.schemas.rules import ReliefType
 
 
 KNOWLEDGE_ROOT = Path(__file__).resolve().parents[2] / "knowledge"
@@ -127,6 +129,20 @@ class KnowledgeRetriever:
                 PATHWAY_FILES[route.pathway],
                 f"PATHWAY: {route.pathway}",
             )
+
+            pathway_relief_types = {
+                "cannabis_related_relief": ReliefType.CANNABIS_EXPUNGEMENT,
+                "general_expungement": ReliefType.CRIMINAL_RECORD_EXPUNGEMENT,
+            }
+
+            relief_type = pathway_relief_types.get(route.pathway)
+
+            if relief_type is not None:
+                for source in list_sources_for_relief_type(
+                    relief_type
+                ):
+                    if source.id not in source_ids:
+                        source_ids.append(source.id)
 
         if route.intent in INTENT_FILES:
             self._add_file(

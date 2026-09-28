@@ -31,3 +31,20 @@ def test_no_source_is_falsely_marked_verified_for_automation_yet():
     # off on a specific source -- see app/knowledge/README.md.
     unverified = list_unverified_sources()
     assert len(unverified) == len(SOURCE_REGISTRY)
+
+
+def test_pathway_retrieval_includes_registered_sources():
+    from app.knowledge.retrieval import retrieve_knowledge
+    from app.knowledge.routing import Route
+
+    route = Route(
+        question_type="personal_justice",
+        pathway="cannabis_related_relief",
+        intent="eligibility",
+        source_categories=[],
+    )
+
+    knowledge = retrieve_knowledge(route)
+
+    assert "cppa_act_7_2024" in knowledge.source_ids
+    assert "doj_expungements_overview" in knowledge.source_ids
