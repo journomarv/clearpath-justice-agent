@@ -79,6 +79,45 @@ SOURCE_REGISTRY: Dict[str, KnowledgeSource] = {
         ),
     ),
 
+    "cppa_act_7_2024": KnowledgeSource(
+        id="cppa_act_7_2024",
+        title="Cannabis for Private Purposes Act 7 of 2024",
+        organization="Republic of South Africa",
+        source_type=SourceType.OFFICIAL,
+        topic="cannabis expungement",
+        notes=(
+            "Legal framework source referenced by the cannabis relief "
+            "rules. Registered for provenance only. It is not approved "
+            "for automated eligibility decisions."
+        ),
+    ),
+
+    "cpa_1977_s271b": KnowledgeSource(
+        id="cpa_1977_s271b",
+        title="Criminal Procedure Act 51 of 1977, section 271B",
+        organization="Republic of South Africa",
+        source_type=SourceType.OFFICIAL,
+        topic="criminal record expungement",
+        notes=(
+            "Legal framework source referenced by the general expungement "
+            "rules. Registered for provenance only. It is not approved "
+            "for automated eligibility decisions."
+        ),
+    ),
+
+    "child_justice_act_s87": KnowledgeSource(
+        id="child_justice_act_s87",
+        title="Child Justice Act 75 of 2008, section 87",
+        organization="Republic of South Africa",
+        source_type=SourceType.OFFICIAL,
+        topic="child justice",
+        notes=(
+            "Legal framework source referenced by the general expungement "
+            "rules. Registered for provenance only. It is not approved "
+            "for automated eligibility decisions."
+        ),
+    ),
+
     "gov_za_expungement": KnowledgeSource(
         id="gov_za_expungement",
         title="Apply for expungement of your criminal record",

@@ -204,7 +204,7 @@ async def process_message(
     )
 
     knowledge = retrieve_knowledge(route)
-    sources = _sources_from_ids(knowledge.source_ids)
+    source_ids = list(knowledge.source_ids)
 
     relief_type = _route_to_relief_type(route)
 
@@ -224,6 +224,9 @@ async def process_message(
 
         result = await check_eligibility(screening)
         assessment = result["assessment"]
+        for source_id in assessment.get("source_ids", []):
+            if source_id not in source_ids:
+                source_ids.append(source_id)
 
         assessment_context = _build_assessment_context(assessment)
 
@@ -293,6 +296,8 @@ async def process_message(
             ReferralReason.TECHNICAL_FAILURE,
             description=request.message,
         )
+
+    sources = _sources_from_ids(source_ids)
 
     return ChatResponse(
         message=message_text,

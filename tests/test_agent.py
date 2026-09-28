@@ -179,3 +179,22 @@ async def test_deepseek_failure_fails_safe_to_human_referral():
         "trouble" in response.message.lower()
         or "team" in response.message.lower()
     )
+
+@pytest.mark.asyncio
+async def test_eligibility_response_includes_assessment_sources():
+    request = ChatRequest(
+        message="Am I eligible to expunge my cannabis conviction?"
+    )
+
+    response = await process_message(
+        request,
+        deepseek_client=_mock_client(),
+    )
+
+    assert response.requires_human is True
+    assert response.next_action == "refer_to_human"
+
+    source_ids = {source.id for source in response.sources}
+
+    assert "cppa_act_7_2024" in source_ids
+    assert "doj_expungements_overview" in source_ids
